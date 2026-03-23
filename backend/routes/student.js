@@ -1,5 +1,5 @@
 const express = require("express");
-const { auth, roleAuth } = require("../middleware/auth");
+const { auth, roleAuth } = require("../controllers/middleware/auth");
 const {
   getStudentBatch,
   bookSlot,

@@ -1,7 +1,7 @@
-const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { sendOtpEmail } = require("../utils/email");
 const crypto = require("crypto");
+const User = require("../models/User");
 
 const rateLimit = require("express-rate-limit");
 

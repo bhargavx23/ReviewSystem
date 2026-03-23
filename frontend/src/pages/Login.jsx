@@ -1,46 +1,47 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Alert,
-  CircularProgress,
-  Paper,
-  Avatar,
-  CssBaseline,
-} from "@mui/material";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import CollegeHeader from "../components/CollegeHeader";
+import { Lock, Mail, Loader2 } from "lucide-react";
+import { showToast } from "../components/Toaster";
 import { authAPI } from "../services/api";
+import { cn } from "../utils/utils"; // clsx + tailwind-merge helper
 
 const Login = ({ setUser }) => {
   const [step, setStep] = useState(1);
   const [emailOrRollNo, setEmailOrRollNo] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const sendOtpHandler = async () => {
+    if (!emailOrRollNo.trim()) {
+      showToast("Please enter email or roll number", "error");
+      return;
+    }
+
     setLoading(true);
-    setError("");
+    showToast("Sending OTP...", "loading");
+
     try {
       await authAPI.sendOtp({ emailOrRollNo });
-      setMessage("✅ OTP sent to your email!");
+      showToast("✅ OTP sent to your email!", "success");
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.message || "Error sending OTP");
+      showToast(err.response?.data?.message || "Error sending OTP", "error");
+    } finally {
+      setLoading(false);
+      showToast("dismiss");
     }
-    setLoading(false);
   };
 
   const verifyOtpHandler = async () => {
+    if (otp.length !== 6) {
+      showToast("Please enter valid 6-digit OTP", "error");
+      return;
+    }
+
     setLoading(true);
-    setError("");
+    showToast("Verifying...", "loading");
+
     try {
       const response = await authAPI.verifyOtp({ emailOrRollNo, otp });
       localStorage.setItem("token", response.data.token);
@@ -49,109 +50,127 @@ const Login = ({ setUser }) => {
       setUser(response.data.user);
 
       const role = response.data.user.role;
+      showToast(`Welcome ${response.data.user.name}!`, "success");
       navigate(`/${role}`, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid OTP");
+      showToast(err.response?.data?.message || "Invalid OTP", "error");
+    } finally {
+      setLoading(false);
+      showToast("dismiss");
     }
-    setLoading(false);
   };
 
   return (
-    <Container component="main" maxWidth="sm">
-      <CssBaseline />
-      <Paper elevation={10} sx={{ mt: 8, p: 4, borderRadius: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <Avatar sx={{ m: 1, bgcolor: "#1e3a8a" }}>
-            <LockOutlinedIcon />
-          </Avatar>
-          <Typography
-            component="h1"
-            variant="h4"
-            sx={{ mb: 3, fontWeight: "bold" }}
-          >
-            Project Review Login
-          </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
-              {error}
-            </Alert>
-          )}
-          {message && (
-            <Alert severity="success" sx={{ mb: 2, width: "100%" }}>
-              {message}
-            </Alert>
-          )}
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="w-full max-w-md">
+        {/* Glassmorphism Card */}
+        <div className="glass-card p-8 rounded-3xl shadow-2xl">
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-2xl flex items-center justify-center mb-6 shadow-xl">
+              <Lock className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-200 mb-2">
+              ReviewSlot Login
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              Enter email/roll no to receive OTP
+            </p>
+          </div>
 
           {step === 1 ? (
             <>
-              <TextField
-                fullWidth
-                label="Email or Roll Number"
-                value={emailOrRollNo}
-                onChange={(e) => setEmailOrRollNo(e.target.value)}
-                sx={{ mb: 3 }}
-              />
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                onClick={sendOtpHandler}
-                disabled={!emailOrRollNo || loading}
-                sx={{ py: 1.5, fontSize: "1.1rem" }}
-              >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Send OTP"
-                )}
-              </Button>
+              <div className="space-y-4">
+                <div>
+                  <label className="label">
+                    <span className="label-text font-semibold">
+                      Email or Roll Number
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="example@college.edu or 21CS001"
+                    className="input input-bordered w-full input-lg"
+                    value={emailOrRollNo}
+                    onChange={(e) => setEmailOrRollNo(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="btn btn-primary w-full text-lg py-3 transform-hover"
+                  onClick={sendOtpHandler}
+                  disabled={loading || !emailOrRollNo.trim()}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send OTP"
+                  )}
+                </button>
+              </div>
             </>
           ) : (
             <>
-              <Typography sx={{ mb: 2 }}>
-                OTP sent to {emailOrRollNo}
-              </Typography>
-              <TextField
-                fullWidth
-                label="Enter 6-digit OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                sx={{ mb: 3 }}
-                inputProps={{
-                  maxLength: 6,
-                  style: {
-                    textAlign: "center",
-                    fontSize: "1.5rem",
-                    letterSpacing: "5px",
-                  },
-                }}
-              />
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                onClick={verifyOtpHandler}
-                disabled={otp.length !== 6 || loading}
-                sx={{ py: 1.5, fontSize: "1.1rem" }}
-              >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Login"
-                )}
-              </Button>
+              <div className="text-center mb-6">
+                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                  OTP sent to <span className="font-mono">{emailOrRollNo}</span>
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="label">
+                    <span className="label-text font-semibold">
+                      Enter 6-digit OTP
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="123456"
+                    className="input input-bordered w-full input-lg text-center tracking-[8px] font-mono text-xl"
+                    value={otp}
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/[^0-9]/g, ""))
+                    }
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    className="btn btn-ghost flex-1 text-lg"
+                    onClick={() => {
+                      setStep(1);
+                      setOtp("");
+                    }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    className="btn btn-primary flex-1 text-lg transform-hover"
+                    onClick={verifyOtpHandler}
+                    disabled={otp.length !== 6 || loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                        Verifying...
+                      </>
+                    ) : (
+                      "Login"
+                    )}
+                  </button>
+                </div>
+              </div>
             </>
           )}
-        </Box>
-      </Paper>
-    </Container>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
+          DVR & DR.HS MIC College of Technology
+        </p>
+      </div>
+    </div>
   );
 };
 

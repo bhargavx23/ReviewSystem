@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { showToast } from "../components/Toaster";
+
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
 const api = axios.create({
@@ -25,6 +27,10 @@ api.interceptors.response.use(
       localStorage.removeItem("role");
       window.location.href = "/login";
     }
+    showToast(
+      error.response?.data?.message || error.message || "Something went wrong",
+      "error",
+    );
     return Promise.reject(error);
   },
 );

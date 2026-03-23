@@ -24,6 +24,24 @@ mongoose
       );
     }
 
+    // Create Student
+    const student = await User.findOne({
+      email: "qwerty1234567890siva@gmail.com",
+    });
+    if (!student) {
+      const newStudent = new User({
+        name: "Siva Student",
+        email: "qwerty1234567890siva@gmail.com",
+        rollNo: "STU001",
+        role: "student",
+        otp: "123456",
+      });
+      await newStudent.save();
+      console.log(
+        "✅ Student created: qwerty1234567890siva@gmail.com (OTP: 123456)",
+      );
+    }
+
     // Default Settings
     await Settings.findOneAndUpdate(
       {},
