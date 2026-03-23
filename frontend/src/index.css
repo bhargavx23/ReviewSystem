@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Full responsive background */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+/* Dashboard gradient */
+.dashboard {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Card hover effects */
+.card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.2),
+    0 10px 10px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Status colors */
+.status-approved {
+  border-left: 5px solid #10b981 !important;
+}
+.status-pending {
+  border-left: 5px solid #f59e0b !important;
+}
+.status-rejected {
+  border-left: 5px solid #ef4444 !important;
+}
+.status-available {
+  border-left: 5px solid #06b6d4 !important;
+}
+
+/* Custom buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 24px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.39) !important;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5) !important;
+}
+
+/* Navbar responsive */
+@media (max-width: 900px) {
+  .MuiToolbar-root {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .MuiTypography-h6 {
+    font-size: 1rem !important;
+  }
+}
+
+/* Table responsive */
+@media (max-width: 768px) {
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
+    display: block;
+  }
+
+  thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  tr {
+    border: 1px solid #ccc;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  td {
+    border: none;
+    position: relative;
+    padding-left: 50%;
+    white-space: normal;
+    text-align: right;
+  }
+
+  td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 6px;
+    width: 45%;
+    font-weight: 600;
+    text-align: left;
+  }
+}
+
+/* Cards responsive */
+@media (max-width: 600px) {
+  .card {
+    margin: 0.5rem 0 !important;
+  }
+
+  .MuiGrid-item {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+}
+
+/* Container responsive */
+@media (max-width: 480px) {
+  .MuiContainer-root {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Login responsive */
+@media (max-width: 480px) {
+  .MuiPaper-root {
+    margin: 1rem !important;
+    padding: 2rem 1.5rem !important;
+  }
+
+  .MuiTypography-h4 {
+    font-size: 1.75rem !important;
+  }
+}
+
+/* Calendar responsive */
+.fc {
+  --fc-border-color: #e5e7eb;
+  --fc-daygrid-event-dot-width: 5px;
+}
+
+@media (max-width: 768px) {
+  .fc-col-header-cell-cushion {
+    font-size: 0.75rem !important;
+  }
+
+  .fc-daygrid-day-number {
+    font-size: 0.85rem !important;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #64748b, #475569);
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading {
+  animation: spin 1s linear infinite;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none;
+  }
+}
