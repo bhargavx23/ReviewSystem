@@ -1,11 +1,12 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
+import { BrowserRouter as Router } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Toaster from "./components/Toaster";
 import { DarkModeProvider, useDarkMode } from "./contexts/DarkModeContext";
@@ -22,6 +23,7 @@ function AppContent() {
   const [user, setUser] = useState(null);
   const { isDark, toggleDarkMode } = useDarkMode();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -35,7 +37,6 @@ function AppContent() {
   const RequireAuth = ({ children, allowedRole }) => {
     const role = localStorage.getItem("role");
     if (!user || role !== allowedRole) {
-      // showToast removed - no import
       return <Navigate to="/login" replace state={{ from: location }} />;
     }
     return children;
@@ -44,92 +45,90 @@ function AppContent() {
   const isAuthenticated = !!localStorage.getItem("token");
 
   return (
-    <>
-      <Router>
-        <div className="min-h-screen bg-gradient-to-br from-base-50 to-base-100 dark:from-base-900 dark:to-base-800 transition-all duration-300">
-          {isAuthenticated && (
-            <Navbar toggleDarkMode={toggleDarkMode} isDark={isDark} />
-          )}
-          <main className="container mx-auto px-4 py-8 max-w-7xl">
-            {isAuthenticated && <CollegeHeader />}
-            <AnimatePresence mode="wait">
-              <Routes location={location} key={location.pathname}>
-                <Route
-                  path="/login"
-                  element={
+    <div className="min-h-screen bg-gradient-to-br from-base-50 to-base-100 dark:from-base-900 dark:to-base-800 transition-all duration-300">
+      {isAuthenticated && (
+        <Navbar toggleDarkMode={toggleDarkMode} isDark={isDark} />
+      )}
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {isAuthenticated && <CollegeHeader />}
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route
+              path="/login"
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <Login setUser={setUser} />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <RequireAuth allowedRole="admin">
+                  <Suspense fallback={<div className="skeleton h-64" />}>
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
                     >
-                      <Login setUser={setUser} />
+                      <AdminDashboard />
                     </motion.div>
-                  }
-                />
-                <Route
-                  path="/admin"
-                  element={
-                    <RequireAuth allowedRole="admin">
-                      <Suspense fallback={<div className="skeleton h-64" />}>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <AdminDashboard />
-                        </motion.div>
-                      </Suspense>
-                    </RequireAuth>
-                  }
-                />
-                <Route
-                  path="/guide"
-                  element={
-                    <RequireAuth allowedRole="guide">
-                      <Suspense fallback={<div className="skeleton h-64" />}>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <GuideDashboard />
-                        </motion.div>
-                      </Suspense>
-                    </RequireAuth>
-                  }
-                />
-                <Route
-                  path="/student"
-                  element={
-                    <RequireAuth allowedRole="student">
-                      <Suspense fallback={<div className="skeleton h-64" />}>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <StudentDashboard />
-                        </motion.div>
-                      </Suspense>
-                    </RequireAuth>
-                  }
-                />
-                <Route path="/" element={<Navigate to="/login" replace />} />
-              </Routes>
-            </AnimatePresence>
-          </main>
-        </div>
-      </Router>
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/guide"
+              element={
+                <RequireAuth allowedRole="guide">
+                  <Suspense fallback={<div className="skeleton h-64" />}>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <GuideDashboard />
+                    </motion.div>
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/student"
+              element={
+                <RequireAuth allowedRole="student">
+                  <Suspense fallback={<div className="skeleton h-64" />}>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <StudentDashboard />
+                    </motion.div>
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
+            <Route path="/" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </AnimatePresence>
+      </main>
       <Toaster position="top-right" />
-    </>
+    </div>
   );
 }
 
 function App() {
   return (
-    <DarkModeProvider>
-      <AppContent />
-    </DarkModeProvider>
+    <Router>
+      <DarkModeProvider>
+        <AppContent />
+      </DarkModeProvider>
+    </Router>
   );
 }
 

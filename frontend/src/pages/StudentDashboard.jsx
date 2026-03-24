@@ -9,17 +9,20 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
+import BookingCalendar from "../components/Calendar.jsx";
 import { showToast } from "../components/Toaster";
 import { studentAPI } from "../services/api";
 
 const StudentDashboard = () => {
   const [myBatch, setMyBatch] = useState(null);
-  const [bookingOpen, setBookingOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedSlot, setSelectedSlot] = useState(1);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [myBookings, setMyBookings] = useState([]);
+  const [guideData, setGuideData] = useState({ bookings: [], settings: {} });
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [selectedDateForSlot, setSelectedDateForSlot] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState(1);
+  const [availableSlots, setAvailableSlots] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -28,9 +31,13 @@ const StudentDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const myBatchRes = await studentAPI.getMyBatch();
+      const [myBatchRes, guideRes] = await Promise.all([
+        studentAPI.getMyBatch(),
+        studentAPI.getGuideBookings(),
+      ]);
       setMyBatch(myBatchRes.data?.batch || null);
       setMyBookings(myBatchRes.data?.bookings || []);
+      setGuideData(guideRes.data || { bookings: [], settings: {} });
     } catch (err) {
       console.error("Error fetching data:", err);
       if (err.response?.status !== 404) {
@@ -41,9 +48,29 @@ const StudentDashboard = () => {
     }
   };
 
+  const handleDateSelect = (dateStr) => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (dateStr < todayStr) {
+      showToast("Cannot book past dates", "error");
+      return;
+    }
+    const bookedSlots = guideData.bookings
+      .filter((b) => new Date(b.date).toISOString().split("T")[0] === dateStr)
+      .map((b) => b.slotNumber);
+    const allSlots = Array.from({ length: 10 }, (_, i) => i + 1);
+    const avail = allSlots.filter((s) => !bookedSlots.includes(s));
+    if (avail.length === 0) {
+      showToast("All slots are booked for this date", "error");
+      return;
+    }
+    setSelectedDateForSlot(dateStr);
+    setAvailableSlots(avail);
+    setBookingOpen(true);
+  };
+
   const handleBookSlot = async () => {
     try {
-      if (!selectedDate) {
+      if (!selectedDateForSlot) {
         showToast("Please select a date", "error");
         return;
       }
@@ -52,7 +79,7 @@ const StudentDashboard = () => {
       showToast("Booking slot...", "loading");
 
       await studentAPI.bookSlot({
-        date: selectedDate,
+        date: selectedDateForSlot,
         slotNumber: selectedSlot,
       });
 
@@ -61,8 +88,9 @@ const StudentDashboard = () => {
         "success",
       );
       setBookingOpen(false);
-      setSelectedDate(null);
+      setSelectedDateForSlot("");
       setSelectedSlot(1);
+      setAvailableSlots([]);
       fetchData();
     } catch (err) {
       showToast(
@@ -185,36 +213,32 @@ const StudentDashboard = () => {
         )}
       </motion.section>
 
-      {/* Book Slot CTA */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="glass-card p-8 rounded-3xl shadow-xl"
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-3">
-              <Calendar className="w-9 h-9 text-primary bg-primary/10 p-2 rounded-xl" />
-              Book Review Slot
+      {/* Review Calendar */}
+      {myBatch && guideData.settings.reviewStartDate && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="glass-card rounded-3xl shadow-2xl overflow-hidden"
+        >
+          <div className="p-8 border-b border-gray-200/50 dark:border-gray-700/50">
+            <h3 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-4 mb-4">
+              <Calendar className="w-12 h-12 text-primary bg-primary/10 p-3 rounded-2xl" />
+              Review Calendar - {myBatch.guideId?.name || "Your Guide"}
             </h3>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
-              Schedule your project review with your guide. Max 10 slots per
-              day.
+            <p className="text-xl text-gray-600 dark:text-gray-400">
+              Click any available date to book a slot. Booked slots shown in
+              color.
             </p>
           </div>
-          <motion.button
-            onClick={() => setBookingOpen(true)}
-            disabled={!myBatch}
-            className="btn btn-warning btn-lg px-12 shadow-xl hover:shadow-2xl gap-3 order-first lg:order-last"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Calendar className="w-6 h-6" />
-            Book Now
-          </motion.button>
-        </div>
-      </motion.div>
+          <BookingCalendar
+            settings={guideData.settings}
+            bookings={guideData.bookings}
+            onDateSelect={handleDateSelect}
+            height="400px"
+          />
+        </motion.section>
+      )}
 
       {/* My Bookings Grid */}
       <motion.section
@@ -229,7 +253,8 @@ const StudentDashboard = () => {
             </h3>
             {myBookings.length === 0 && (
               <p className="text-gray-500 dark:text-gray-400">
-                No bookings yet. Book your first slot above!
+                No bookings yet. Use the calendar above to book your review
+                slot!
               </p>
             )}
           </div>
@@ -272,7 +297,7 @@ const StudentDashboard = () => {
                       <h4 className="text-xl font-bold text-gray-900 dark:text-white">
                         Slot {booking.slotNumber}
                       </h4>
-                      <p className="text-lg font-mono text-primary">
+                      <p className="text-lg font-mono text-primary truncate">
                         {new Date(booking.date).toLocaleDateString("en-IN", {
                           weekday: "long",
                           year: "numeric",
@@ -294,60 +319,49 @@ const StudentDashboard = () => {
         </div>
       </motion.section>
 
-      {/* Booking Modal */}
+      {/* Slot Selection Modal */}
       <motion.dialog open={bookingOpen} className="modal modal-open">
-        <div className="modal-box glass-card max-w-md p-8 rounded-3xl max-h-[90vh] overflow-y-auto">
-          <h3 className="font-bold text-2xl text-gray-900 dark:text-white mb-8 flex items-center gap-3">
-            <Calendar className="w-9 h-9 text-primary bg-primary/10 p-2 rounded-xl" />
-            Book Review Slot
+        <div className="modal-box glass-card max-w-lg p-8 rounded-3xl max-h-[90vh] overflow-y-auto">
+          <h3 className="font-bold text-2xl text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+            <Calendar className="w-10 h-10 text-primary bg-primary/10 p-2.5 rounded-xl" />
+            Select Slot for{" "}
+            {new Date(selectedDateForSlot).toLocaleDateString("en-IN", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </h3>
-          <div className="space-y-6">
-            <div>
-              <label className="label">
-                <span className="label-text font-semibold text-lg">
-                  Review Date
-                </span>
-              </label>
-              <input
-                type="date"
-                className="input input-bordered input-lg w-full text-lg"
-                value={selectedDate || ""}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-              />
-            </div>
-            <div>
-              <label className="label">
-                <span className="label-text font-semibold text-lg">
-                  Slot Number
-                </span>
-              </label>
-              <input
-                type="number"
-                placeholder="1-10"
-                className="input input-bordered input-lg w-full text-lg"
-                value={selectedSlot}
-                onChange={(e) =>
-                  setSelectedSlot(
-                    Math.max(1, Math.min(10, parseInt(e.target.value) || 1)),
-                  )
-                }
-                min="1"
-                max="10"
-              />
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                💡 Choose slots 1-10 based on your guide&apos;s availability
-                schedule
-              </p>
-            </div>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+            Available slots:{" "}
+            <span className="font-bold text-primary">
+              {availableSlots.length}
+            </span>{" "}
+            / 10
+          </p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-8 p-4 bg-gray-50 dark:bg-slate-800/30 rounded-2xl">
+            {availableSlots.map((slot) => (
+              <motion.button
+                key={slot}
+                className={`btn md:btn-lg font-bold md:text-xl text-lg aspect-square shadow-lg ${
+                  selectedSlot === slot ? "btn-primary" : "btn-outline btn-info"
+                }`}
+                onClick={() => setSelectedSlot(slot)}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {slot}
+              </motion.button>
+            ))}
           </div>
-          <div className="modal-action mt-12 gap-4">
+          <div className="flex gap-4 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
             <button
               className="btn btn-ghost btn-lg flex-1"
               onClick={() => {
                 setBookingOpen(false);
-                setSelectedDate(null);
+                setSelectedDateForSlot("");
                 setSelectedSlot(1);
+                setAvailableSlots([]);
               }}
             >
               Cancel
@@ -355,7 +369,7 @@ const StudentDashboard = () => {
             <button
               className="btn btn-primary btn-lg flex-1 gap-3 shadow-2xl"
               onClick={handleBookSlot}
-              disabled={!selectedDate || actionLoading}
+              disabled={actionLoading}
             >
               {actionLoading ? (
                 <>
@@ -363,7 +377,7 @@ const StudentDashboard = () => {
                   Booking...
                 </>
               ) : (
-                "Confirm Booking"
+                `Book Slot ${selectedSlot}`
               )}
             </button>
           </div>

@@ -3,15 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@fullcalendar/daygrid": "^6.1.20",
+    "@fullcalendar/interaction": "^6.1.20",
+    "@fullcalendar/react": "^6.1.20",
+    "@fullcalendar/timegrid": "^6.1.20",
     "axios": "^1.7.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.1",
-    "react-scripts": "5.0.1",
-    "react-hot-toast": "^2.4.1",
+    "clsx": "^2.1.1",
     "framer-motion": "^11.2.13",
     "lucide-react": "^0.399.0",
-    "clsx": "^2.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.26.1",
+    "react-scripts": "5.0.1",
     "tailwind-merge": "^2.3.0"
   },
   "scripts": {
@@ -39,9 +43,9 @@
     ]
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.4",
     "autoprefixer": "^10.4.19",
+    "daisyui": "^4.12.10",
     "postcss": "^8.4.38",
-    "daisyui": "^4.12.10"
+    "tailwindcss": "^3.4.4"
   }
 }

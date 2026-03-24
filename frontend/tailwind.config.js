@@ -22,11 +22,18 @@ module.exports = {
       },
       colors: {
         primary: {
-          50: "#eff6ff",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
+          50: "#e0e7ff",
+          100: "#c7d2fe",
+          200: "#a5b4fd",
+          300: "#818cf8",
+          400: "#6366f1",
+          500: "#4169e1",
+          600: "#3650c4",
+          700: "#2b3fa0",
+          800: "#1e2a6b",
+          900: "#111b3f",
         },
+        royal: "#4169e1",
         gold: {
           400: "#f59e0b",
           500: "#d97706",
@@ -36,7 +43,7 @@ module.exports = {
   },
   plugins: [require("daisyui")],
   daisyui: {
-    themes: ["light", "dark", "cupcake", "emerald", "synthwave"], // Cool themes
+    themes: ["royal", "dark", "light", "business"],
     darkTheme: "dark",
     base: true,
     utils: true,

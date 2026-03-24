@@ -61,6 +61,7 @@ export const studentAPI = {
   getAllBatches: () => api.get("/student/batches"),
   getMyBatch: () => api.get("/student/my-batch"),
   bookSlot: (data) => api.post("/student/book-slot", data),
+  getGuideBookings: () => api.get("/student/guide-bookings"),
 };
 
 export default api;

@@ -61,19 +61,19 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <div className="w-full max-w-md">
-        {/* Glassmorphism Card */}
-        <div className="glass-card p-8 rounded-3xl shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50">
+      <div className="w-full max-w-md fade-in-up">
+        {/* Premium Card */}
+        <div className="card bg-white p-8 rounded-2xl shadow-xl border border-blue-100">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-2xl flex items-center justify-center mb-6 shadow-xl">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
               <Lock className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent dark:from-white dark:to-gray-200 mb-2">
+            <h1 className="text-3xl font-bold text-blue-900 mb-2">
               ReviewSlot Login
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Enter email/roll no to receive OTP
+            <p className="text-gray-600 text-sm text-center">
+              Enter email or roll number to receive OTP
             </p>
           </div>
 
@@ -81,27 +81,25 @@ const Login = ({ setUser }) => {
             <>
               <div className="space-y-4">
                 <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">
-                      Email or Roll Number
-                    </span>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email or Roll Number
                   </label>
                   <input
                     type="text"
                     placeholder="example@college.edu or 21CS001"
-                    className="input input-bordered w-full input-lg"
+                    className="input-primary"
                     value={emailOrRollNo}
                     onChange={(e) => setEmailOrRollNo(e.target.value)}
                   />
                 </div>
                 <button
-                  className="btn btn-primary w-full text-lg py-3 transform-hover"
+                  className="btn-primary w-full"
                   onClick={sendOtpHandler}
                   disabled={loading || !emailOrRollNo.trim()}
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
                       Sending...
                     </>
                   ) : (
@@ -113,22 +111,23 @@ const Login = ({ setUser }) => {
           ) : (
             <>
               <div className="text-center mb-6">
-                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                  OTP sent to <span className="font-mono">{emailOrRollNo}</span>
+                <p className="text-lg font-semibold text-gray-700">
+                  OTP sent to{" "}
+                  <span className="font-mono text-blue-600">
+                    {emailOrRollNo}
+                  </span>
                 </p>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="label">
-                    <span className="label-text font-semibold">
-                      Enter 6-digit OTP
-                    </span>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Enter 6-digit OTP
                   </label>
                   <input
                     type="text"
                     maxLength={6}
                     placeholder="123456"
-                    className="input input-bordered w-full input-lg text-center tracking-[8px] font-mono text-xl"
+                    className="input-primary text-center tracking-[8px] font-mono text-xl"
                     value={otp}
                     onChange={(e) =>
                       setOtp(e.target.value.replace(/[^0-9]/g, ""))
@@ -137,7 +136,7 @@ const Login = ({ setUser }) => {
                 </div>
                 <div className="flex gap-3">
                   <button
-                    className="btn btn-ghost flex-1 text-lg"
+                    className="btn-secondary flex-1"
                     onClick={() => {
                       setStep(1);
                       setOtp("");
@@ -146,7 +145,7 @@ const Login = ({ setUser }) => {
                     Back
                   </button>
                   <button
-                    className="btn btn-primary flex-1 text-lg transform-hover"
+                    className="btn-primary flex-1"
                     onClick={verifyOtpHandler}
                     disabled={otp.length !== 6 || loading}
                   >
