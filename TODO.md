@@ -1,31 +1,6 @@
-# Gmail SMTP Fix - FINAL STEPS
+# Fix Admin Dashboard Approval/Reject
 
-🔴 **ERROR PERSISTING** - 535 BadCredentials
-
-## Root Causes & Fixes
-
-1. ✅ EMAIL_USER/PASS present
-2. ❌ **ENV VAR NAMES WRONG** ← Fix #1  
-   `backend/.env`: Change `NODemailer_HOST` → `SMTP_HOST`  
-   Change `NODemailer_PORT` → `SMTP_PORT`
-
-3. ❌ **APP PASSWORD INVALID** ← Fix #2 (Critical)
-   - Revoke old: lrnq uuuu udlf fryd
-   - [Generate NEW](https://myaccount.google.com/apppasswords)
-   - **Copy EXACTLY** (no extra spaces!)
-   - Update EMAIL_PASS
-
-## Test Sequence
-
-```
-cd backend
-node seed.js
-```
-
-Expected: ✅ created messages + emails received
-
-## If Still Fails
-
-- Check 2FA enabled
-- Try different email account
-- Use Ethereal (test SMTP): EMAIL_USER=test@ethereal.email etc.
+✅ 1. Update backend/routes/admin.js (roleAuth to include "hod")
+✅ 2. Update backend/controllers/adminController.js (reject pending check + guide email + approve populate)
+✅ 3. Update frontend/src/pages/AdminDashboard.jsx (fix reject toast)
+✅ 4. Test approve/reject functionality 5. Restart backend server

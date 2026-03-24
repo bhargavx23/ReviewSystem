@@ -86,8 +86,25 @@ const getAllBookings = async (req, res) => {
 
 // Delete booking
 const deleteBooking = async (req, res) => {
-  await Booking.findByIdAndDelete(req.params.id);
-  res.json({ message: "Booking deleted" });
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "Booking ID is required" });
+    }
+
+    const booking = await Booking.findByIdAndDelete(id);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    console.log(`✅ Booking deleted: ${id}`);
+    res.json({ message: "Booking deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting booking:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
 // Get all guides
 const getGuides = async (req, res) => {
@@ -106,8 +123,28 @@ const getBatches = async (req, res) => {
 
 // Delete batch
 const deleteBatch = async (req, res) => {
-  await Batch.findByIdAndDelete(req.params.id);
-  res.json({ message: "Batch deleted" });
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "Batch ID is required" });
+    }
+
+    const batch = await Batch.findByIdAndDelete(id);
+
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    // Also delete all bookings associated with this batch
+    await Booking.deleteMany({ batchId: id });
+
+    console.log(`✅ Batch deleted: ${id}`);
+    res.json({ message: "Batch deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting batch:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // HOD Approve booking (admin approval)
@@ -120,7 +157,7 @@ const approveBookingHOD = async (req, res) => {
       { new: true },
     )
       .populate("batchId", "teamLeaderEmail batchName")
-      .populate("guideId", "name");
+      .populate("guideId", "name email");
 
     if (!booking) {
       return res
@@ -147,19 +184,31 @@ const rejectBookingHOD = async (req, res) => {
   try {
     const { id } = req.params;
     const booking = await Booking.findOneAndUpdate(
-      { _id: id },
+      { _id: id, status: "pending" },
       { status: "rejected" },
       { new: true },
-    ).populate("batchId", "teamLeaderEmail batchName");
+    )
+      .populate("batchId", "teamLeaderEmail batchName")
+      .populate("guideId", "email");
 
     if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
+      return res
+        .status(404)
+        .json({ message: "Booking not found or not pending" });
     }
 
-    // Send rejection email
+    // Send rejection emails
     await sendBookingEmail(booking.batchId.teamLeaderEmail, "rejected", {
       batchName: booking.batchId.batchName,
     });
+
+    if (booking.guideId?.email) {
+      await sendBookingEmail(booking.guideId.email, "guide-rejected", {
+        batchName: booking.batchId.batchName,
+        date: booking.date,
+        slotNumber: booking.slotNumber,
+      });
+    }
 
     res.json({ message: "Booking rejected by HOD", booking });
   } catch (err) {
