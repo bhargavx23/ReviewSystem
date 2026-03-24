@@ -12,9 +12,18 @@ import {
 import BookingCalendar from "../components/Calendar.jsx";
 import { showToast } from "../components/Toaster";
 import { studentAPI } from "../services/api";
+import BatchGrid from "../components/BatchGrid.jsx";
 
 const StudentDashboard = () => {
   const [myBatch, setMyBatch] = useState(null);
+  const [activeBatch, setActiveBatch] = useState(null);
+  const [allBatches, setAllBatches] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    approved: 0,
+    pending: 0,
+    remaining: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [myBookings, setMyBookings] = useState([]);
@@ -23,6 +32,8 @@ const StudentDashboard = () => {
   const [selectedDateForSlot, setSelectedDateForSlot] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(1);
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [selectedBatchModal, setSelectedBatchModal] = useState(null);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -31,13 +42,28 @@ const StudentDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [myBatchRes, guideRes] = await Promise.all([
+      const [myBatchRes, guideRes, allBatchesRes] = await Promise.all([
         studentAPI.getMyBatch(),
         studentAPI.getGuideBookings(),
+        studentAPI.getAllBatches(),
       ]);
-      setMyBatch(myBatchRes.data?.batch || null);
+      const batchFromApi = myBatchRes.data?.batch || null;
+      setMyBatch(batchFromApi);
+      setActiveBatch(batchFromApi);
       setMyBookings(myBatchRes.data?.bookings || []);
       setGuideData(guideRes.data || { bookings: [], settings: {} });
+
+      const batches = allBatchesRes.data || [];
+      setAllBatches(batches);
+
+      const approved = batches.filter((b) => b.status === "approved").length;
+      const pending = batches.filter((b) => b.status === "pending").length;
+      setStats({
+        total: batches.length,
+        approved,
+        pending,
+        remaining: batches.length - approved - pending,
+      });
     } catch (err) {
       console.error("Error fetching data:", err);
       if (err.response?.status !== 404) {
@@ -54,10 +80,30 @@ const StudentDashboard = () => {
       showToast("Cannot book past dates", "error");
       return;
     }
+
+    const start = guideData.settings?.reviewStartDate
+      ? new Date(guideData.settings.reviewStartDate).toISOString().split("T")[0]
+      : null;
+    const end = guideData.settings?.reviewEndDate
+      ? new Date(guideData.settings.reviewEndDate).toISOString().split("T")[0]
+      : null;
+
+    if (start && dateStr < start) {
+      showToast("Selected date is before allowed review window", "error");
+      return;
+    }
+    if (end && dateStr > end) {
+      showToast("Selected date is after allowed review window", "error");
+      return;
+    }
+
     const bookedSlots = guideData.bookings
       .filter((b) => new Date(b.date).toISOString().split("T")[0] === dateStr)
       .map((b) => b.slotNumber);
-    const allSlots = Array.from({ length: 10 }, (_, i) => i + 1);
+    const allSlots = Array.from(
+      { length: guideData.settings?.slotsPerDay || 10 },
+      (_, i) => i + 1,
+    );
     const avail = allSlots.filter((s) => !bookedSlots.includes(s));
     if (avail.length === 0) {
       showToast("All slots are booked for this date", "error");
@@ -81,10 +127,11 @@ const StudentDashboard = () => {
       await studentAPI.bookSlot({
         date: selectedDateForSlot,
         slotNumber: selectedSlot,
+        batchId: activeBatch?._id,
       });
 
       showToast(
-        "✅ Slot booked successfully! Awaiting guide approval.",
+        "✅ Slot booked successfully! Awaiting admin approval.",
         "success",
       );
       setBookingOpen(false);
@@ -108,6 +155,11 @@ const StudentDashboard = () => {
         className: "badge-success",
         icon: CheckCircle,
         label: "Approved",
+      },
+      "guide-approved": {
+        className: "badge-info",
+        icon: Clock,
+        label: "Guide Approved (awaiting admin)",
       },
       pending: { className: "badge-warning", icon: Clock, label: "Pending" },
       rejected: { className: "badge-error", icon: XCircle, label: "Rejected" },
@@ -157,11 +209,61 @@ const StudentDashboard = () => {
         </div>
       </motion.div>
 
-      {/* My Batch Hero */}
+      {/* BIG Batches Grid */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+        className="glass-card rounded-3xl overflow-hidden"
+      >
+        <div className="p-8 border-b border-gray-200/50 dark:border-gray-700/50">
+          <h3 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3 mb-2">
+            <BookOpen className="w-12 h-12 text-primary bg-primary/10 p-3 rounded-2xl" />
+            All Batches Overview ({allBatches.length})
+          </h3>
+          <p className="text-xl text-gray-600 dark:text-gray-400">
+            Click any batch for details • Green = Approved • Yellow = Pending •
+            Red = Available
+          </p>
+        </div>
+        <div className="p-8">
+          <BatchGrid
+            batches={allBatches}
+            onBatchClick={(batch) => setSelectedBatchModal(batch)}
+          />
+        </div>
+      </motion.section>
+
+      {/* Summary Stats */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="stats glass-card p-8 rounded-3xl shadow-2xl stats-vertical lg:stats-horizontal"
+      >
+        <div className="stat">
+          <div className="stat-title">Total Batches</div>
+          <div className="stat-value text-primary">{stats.total}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Approved</div>
+          <div className="stat-value text-success">{stats.approved}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Pending</div>
+          <div className="stat-value text-warning">{stats.pending}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Remaining</div>
+          <div className="stat-value text-error">{stats.remaining}</div>
+        </div>
+      </motion.section>
+
+      {/* My Batch Hero */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
         className="glass-card p-8 lg:p-12 rounded-3xl shadow-2xl"
       >
         {myBatch ? (
@@ -319,70 +421,145 @@ const StudentDashboard = () => {
         </div>
       </motion.section>
 
-      {/* Slot Selection Modal */}
-      <motion.dialog open={bookingOpen} className="modal modal-open">
-        <div className="modal-box glass-card max-w-lg p-8 rounded-3xl max-h-[90vh] overflow-y-auto">
-          <h3 className="font-bold text-2xl text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-            <Calendar className="w-10 h-10 text-primary bg-primary/10 p-2.5 rounded-xl" />
-            Select Slot for{" "}
-            {new Date(selectedDateForSlot).toLocaleDateString("en-IN", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </h3>
-          <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-            Available slots:{" "}
-            <span className="font-bold text-primary">
-              {availableSlots.length}
-            </span>{" "}
-            / 10
-          </p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-8 p-4 bg-gray-50 dark:bg-slate-800/30 rounded-2xl">
-            {availableSlots.map((slot) => (
-              <motion.button
-                key={slot}
-                className={`btn md:btn-lg font-bold md:text-xl text-lg aspect-square shadow-lg ${
-                  selectedSlot === slot ? "btn-primary" : "btn-outline btn-info"
-                }`}
-                onClick={() => setSelectedSlot(slot)}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+      {/* Batch Detail Modal */}
+      {selectedBatchModal && (
+        <motion.dialog open={true} className="modal modal-open">
+          <div className="modal-box glass-card max-w-4xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-2xl mb-6 flex items-center gap-3">
+              <BookOpen className="w-10 h-10 text-primary" />
+              {selectedBatchModal.batchName}
+            </h3>
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <h4 className="font-bold text-lg mb-4">Project Details</h4>
+                <p className="text-xl mb-4 font-semibold">
+                  {selectedBatchModal.projectTitle}
+                </p>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-5 h-5 text-gray-500" />
+                    <span className="font-semibold">
+                      {selectedBatchModal.teamLeaderName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-5 h-5">📧</span>
+                    <span>{selectedBatchModal.teamLeaderEmail}</span>
+                  </div>
+                  {selectedBatchModal.guideId && (
+                    <div className="flex items-center gap-3">
+                      <Users className="w-5 h-5 text-primary" />
+                      <span className="font-semibold text-primary">
+                        {selectedBatchModal.guideId.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-bold text-lg mb-4">Status</h4>
+                <div
+                  className={`badge font-bold px-6 py-3 text-lg ${getStatusBadge(selectedBatchModal.status).className}`}
+                >
+                  {getStatusBadge(
+                    selectedBatchModal.status,
+                  ).label.toUpperCase()}
+                </div>
+                {selectedBatchModal.status === "not-booked" && (
+                  <motion.button
+                    className="btn btn-primary btn-lg mt-6 w-full gap-3 shadow-2xl"
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => {
+                      setSelectedBatchModal(null);
+                      showToast("Use the calendar to book your slot!", "info");
+                    }}
+                  >
+                    <Calendar className="w-5 h-5" />
+                    Book Slot Now
+                  </motion.button>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-4 pt-6 border-t border-gray-200/50">
+              <button
+                className="btn btn-ghost btn-lg flex-1"
+                onClick={() => setSelectedBatchModal(null)}
               >
-                {slot}
-              </motion.button>
-            ))}
+                Close
+              </button>
+            </div>
           </div>
-          <div className="flex gap-4 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
-            <button
-              className="btn btn-ghost btn-lg flex-1"
-              onClick={() => {
-                setBookingOpen(false);
-                setSelectedDateForSlot("");
-                setSelectedSlot(1);
-                setAvailableSlots([]);
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              className="btn btn-primary btn-lg flex-1 gap-3 shadow-2xl"
-              onClick={handleBookSlot}
-              disabled={actionLoading}
-            >
-              {actionLoading ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  Booking...
-                </>
-              ) : (
-                `Book Slot ${selectedSlot}`
-              )}
-            </button>
+        </motion.dialog>
+      )}
+
+      {/* Slot Selection Modal */}
+      {bookingOpen && (
+        <motion.dialog className="modal modal-open">
+          <div className="modal-box glass-card max-w-lg p-8 rounded-3xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-2xl text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+              <Calendar className="w-10 h-10 text-primary bg-primary/10 p-2.5 rounded-xl" />
+              Select Slot for{" "}
+              {new Date(selectedDateForSlot).toLocaleDateString("en-IN", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </h3>
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+              Available slots:{" "}
+              <span className="font-bold text-primary">
+                {availableSlots.length}
+              </span>{" "}
+              / 10
+            </p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-8 p-4 bg-gray-50 dark:bg-slate-800/30 rounded-2xl">
+              {availableSlots.map((slot) => (
+                <motion.button
+                  key={slot}
+                  className={`btn md:btn-lg font-bold md:text-xl text-lg aspect-square shadow-lg ${
+                    selectedSlot === slot
+                      ? "btn-primary"
+                      : "btn-outline btn-info"
+                  }`}
+                  onClick={() => setSelectedSlot(slot)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {slot}
+                </motion.button>
+              ))}
+            </div>
+            <div className="flex gap-4 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
+              <button
+                className="btn btn-ghost btn-lg flex-1"
+                onClick={() => {
+                  setBookingOpen(false);
+                  setSelectedDateForSlot("");
+                  setSelectedSlot(1);
+                  setAvailableSlots([]);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary btn-lg flex-1 gap-3 shadow-2xl"
+                onClick={handleBookSlot}
+                disabled={actionLoading}
+              >
+                {actionLoading ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    Booking...
+                  </>
+                ) : (
+                  `Book Slot ${selectedSlot}`
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      </motion.dialog>
+        </motion.dialog>
+      )}
     </motion.div>
   );
 };

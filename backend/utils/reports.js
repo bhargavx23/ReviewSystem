@@ -45,10 +45,8 @@ const generateReport = async (format = "json") => {
     const buffers = [];
 
     doc.on("data", buffers.push.bind(buffers));
-    doc.on("end", () => {
-      const pdfData = Buffer.concat(buffers);
-      // Return pdfData
-    });
+    doc.end();
+    return Buffer.concat(buffers);
 
     doc.text("Review Slot Bookings Report", { align: "center" });
     doc.moveDown();

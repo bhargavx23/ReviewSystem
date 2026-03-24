@@ -9,6 +9,8 @@ import {
   UserPlus,
   Trash2,
   Loader2,
+  Settings as SettingsIcon,
+  BookOpen,
 } from "lucide-react";
 import { showToast } from "../components/Toaster";
 import { cn } from "../utils/utils";
@@ -16,14 +18,30 @@ import { adminAPI } from "../services/api";
 
 const AdminDashboard = () => {
   const [bookings, setBookings] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [batches, setBatches] = useState([]);
+  const [guides, setGuides] = useState([]);
+  const [openUser, setOpenUser] = useState(false);
+  const [openBatch, setOpenBatch] = useState(false);
+  const [openSettings, setOpenSettings] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
+  const [loadingBatches, setLoadingBatches] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [userFormData, setUserFormData] = useState({
     name: "",
     email: "",
     rollNo: "",
     role: "student",
   });
+  const [batchFormData, setBatchFormData] = useState({
+    batchName: "",
+    projectTitle: "",
+    section: "",
+    guideId: "",
+    teamLeaderName: "",
+    teamLeaderEmail: "",
+    teamLeaderRollNo: "",
+  });
+  const [settingsData, setSettingsData] = useState({});
   const [roleFilter, setRoleFilter] = useState("");
 
   useEffect(() => {
@@ -33,8 +51,14 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const bookingsRes = await adminAPI.getBookings();
+      const [bookingsRes, batchesRes, guidesRes] = await Promise.all([
+        adminAPI.getBookings(),
+        adminAPI.getBatches(),
+        adminAPI.getGuides(),
+      ]);
       setBookings(bookingsRes.data || []);
+      setBatches(batchesRes.data || []);
+      setGuides(guidesRes.data || []);
     } catch (err) {
       console.error("Error fetching data:", err);
       showToast("Failed to load data", "error");
@@ -43,19 +67,125 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      const res = await adminAPI.getSettings();
+      setSettingsData(res.data);
+    } catch (err) {
+      showToast("Failed to load settings", "error");
+    }
+  };
+
   const handleCreateUser = async () => {
     try {
-      if (!formData.name || !formData.email || !formData.rollNo) {
+      if (!userFormData.name || !userFormData.email || !userFormData.rollNo) {
         showToast("Please fill all fields", "error");
         return;
       }
-      await adminAPI.createUser(formData);
-      setOpen(false);
-      setFormData({ name: "", email: "", rollNo: "", role: "student" });
+      await adminAPI.createUser(userFormData);
+      setOpenUser(false);
+      setUserFormData({ name: "", email: "", rollNo: "", role: "student" });
       showToast("User created successfully!", "success");
       fetchData();
     } catch (err) {
       showToast(err.response?.data?.message || "Error creating user", "error");
+    }
+  };
+
+  const handleCreateBatch = async () => {
+    try {
+      const {
+        batchName,
+        projectTitle,
+        section,
+        teamLeaderName,
+        teamLeaderEmail,
+        teamLeaderRollNo,
+      } = batchFormData;
+      if (
+        !batchName ||
+        !projectTitle ||
+        !teamLeaderName ||
+        !teamLeaderEmail ||
+        !teamLeaderRollNo ||
+        !batchFormData.guideId
+      ) {
+        showToast(
+          "Please fill all required batch fields and assign a guide",
+          "error",
+        );
+        return;
+      }
+
+      await adminAPI.createBatch(batchFormData);
+      setOpenBatch(false);
+      setBatchFormData({
+        batchName: "",
+        projectTitle: "",
+        section: "",
+        guideId: "",
+        teamLeaderName: "",
+        teamLeaderEmail: "",
+        teamLeaderRollNo: "",
+      });
+      showToast("Batch created successfully!", "success");
+      fetchData();
+    } catch (err) {
+      showToast(err.response?.data?.message || "Error creating batch", "error");
+    }
+  };
+
+  const handleUpdateSettings = async () => {
+    try {
+      await adminAPI.updateSettings({
+        reviewStartDate: settingsData.reviewStartDate,
+        reviewEndDate: settingsData.reviewEndDate,
+        slotsPerDay: settingsData.slotsPerDay || 10,
+      });
+      showToast("Review date range updated successfully!", "success");
+      setOpenSettings(false);
+      fetchData();
+      fetchSettings();
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || "Error updating settings",
+        "error",
+      );
+    }
+  };
+
+  const handleApproveBooking = async (id) => {
+    try {
+      setActionLoading(id);
+      showToast("Approving booking...", "loading");
+      await adminAPI.approveBookingHOD(id);
+      showToast("Booking approved!", "success");
+      fetchData();
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || "Error approving booking",
+        "error",
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRejectBooking = async (id) => {
+    if (!window.confirm("Reject this booking request?")) return;
+    try {
+      setActionLoading(id);
+      showToast("Rejecting booking...", "loading");
+      await adminAPI.rejectBookingHOD(id);
+      showToast("Booking rejected!", "error");
+      fetchData();
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || "Error rejecting booking",
+        "error",
+      );
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -173,7 +303,7 @@ const AdminDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
         >
           <div className="card p-6 bg-gradient-light border-blue-200">
             <div className="flex items-center gap-4 mb-6">
@@ -188,47 +318,112 @@ const AdminDashboard = () => {
               </div>
             </div>
             <button
-              onClick={() => setOpen(true)}
-              className="btn-primary w-full"
+              onClick={() => setOpenUser(true)}
+              className="btn btn-primary w-full"
             >
               <UserPlus className="w-5 h-5" />
               Add New User
             </button>
           </div>
 
-          <div className="card p-6 bg-white border-blue-100">
+          <div className="card p-6 bg-gradient-light border-emerald-200">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
-                <Calendar className="w-8 h-8 text-white" />
+              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg">
+                <BookOpen className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
-                  Filter Bookings
+                  Create Batch
                 </h3>
+                <p className="text-sm text-gray-600">Add new project batches</p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="select-primary flex-1"
-              >
-                <option value="">All Status</option>
-                <option value="approved">✅ Approved</option>
-                <option value="pending">⏳ Pending</option>
-                <option value="rejected">❌ Rejected</option>
-              </select>
-              <button
-                onClick={() => {
-                  setRoleFilter("");
-                  fetchData();
-                }}
-                className="btn-secondary"
-              >
-                Reset
-              </button>
-            </div>
+            <button
+              onClick={() => setOpenBatch(true)}
+              className="btn btn-success w-full"
+            >
+              <BookOpen className="w-5 h-5" />
+              Add Batch
+            </button>
           </div>
+
+          <div className="card p-6 bg-gradient-light border-amber-200">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg">
+                <SettingsIcon className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Review Settings
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Set date range & slots per day (global for all guides)
+                </p>
+                {settingsData.reviewStartDate && settingsData.reviewEndDate && (
+                  <p className="text-sm font-mono mt-1">
+                    📅 Current:{" "}
+                    {new Date(
+                      settingsData.reviewStartDate,
+                    ).toLocaleDateString()}{" "}
+                    -{" "}
+                    {new Date(settingsData.reviewEndDate).toLocaleDateString()}(
+                    {settingsData.slotsPerDay || 10} slots/day)
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                await fetchSettings();
+                setOpenSettings(true);
+              }}
+              className="btn btn-warning w-full gap-2"
+            >
+              <Calendar className="w-5 h-5" />
+              Edit Settings
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Batch Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card p-6 mb-6"
+        >
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Batches</h3>
+          {batches.length === 0 ? (
+            <p className="text-gray-600">No batches created yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {batches.map((batch) => (
+                <div
+                  key={batch._id}
+                  className="card p-4 bg-white border rounded-lg shadow-sm"
+                >
+                  <h4 className="font-bold text-lg text-gray-900">
+                    {batch.batchName}{" "}
+                    {batch.section ? `(${batch.section})` : ""}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Project: {batch.projectTitle}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Lead: {batch.teamLeaderName}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Email: {batch.teamLeaderEmail}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Roll: {batch.teamLeaderRollNo}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Guide: {batch.guideId?.name || "Unassigned"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Bookings Table */}
@@ -296,28 +491,60 @@ const AdminDashboard = () => {
                       <td>
                         {(() => {
                           const statusConfig = {
-                            approved: "badge-success",
-                            pending: "badge-warning",
-                            rejected: "badge-danger",
+                            pending: {
+                              className: "badge-warning",
+                              label: "Pending",
+                            },
+                            approved: {
+                              className: "badge-success",
+                              label: "Approved",
+                            },
+                            rejected: {
+                              className: "badge-danger",
+                              label: "Rejected",
+                            },
+                          };
+                          const status = statusConfig[booking.status] || {
+                            className: "badge-secondary",
+                            label: booking.status,
                           };
                           return (
-                            <span
-                              className={`badge ${statusConfig[booking.status] || "badge-warning"}`}
-                            >
-                              {booking.status.charAt(0).toUpperCase() +
-                                booking.status.slice(1)}
+                            <span className={`badge ${status.className}`}>
+                              {status.label}
                             </span>
                           );
                         })()}
                       </td>
                       <td>
-                        <button
-                          onClick={() => handleDeleteBooking(booking._id)}
-                          className="btn-danger btn-sm"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
+                        <div className="flex gap-2 flex-wrap">
+                          {booking.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  handleApproveBooking(booking._id)
+                                }
+                                className="btn-success btn-sm"
+                                disabled={actionLoading === booking._id}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectBooking(booking._id)}
+                                className="btn-warning btn-sm"
+                                disabled={actionLoading === booking._id}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleDeleteBooking(booking._id)}
+                            className="btn-danger btn-sm"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -328,8 +555,8 @@ const AdminDashboard = () => {
         </motion.div>
 
         {/* Create User Modal */}
-        {open && (
-          <div className="dialog-overlay" onClick={() => setOpen(false)}>
+        {openUser && (
+          <div className="dialog-overlay" onClick={() => setOpenUser(false)}>
             <div
               className="dialog-content"
               onClick={(e) => e.stopPropagation()}
@@ -347,9 +574,9 @@ const AdminDashboard = () => {
                     type="text"
                     placeholder="Enter full name"
                     className="input-primary"
-                    value={formData.name}
+                    value={userFormData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
+                      setUserFormData({ ...userFormData, name: e.target.value })
                     }
                   />
                 </div>
@@ -361,9 +588,12 @@ const AdminDashboard = () => {
                     type="email"
                     placeholder="user@college.edu"
                     className="input-primary"
-                    value={formData.email}
+                    value={userFormData.email}
                     onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
+                      setUserFormData({
+                        ...userFormData,
+                        email: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -375,9 +605,12 @@ const AdminDashboard = () => {
                     type="text"
                     placeholder="21CS001"
                     className="input-primary"
-                    value={formData.rollNo}
+                    value={userFormData.rollNo}
                     onChange={(e) =>
-                      setFormData({ ...formData, rollNo: e.target.value })
+                      setUserFormData({
+                        ...userFormData,
+                        rollNo: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -387,9 +620,9 @@ const AdminDashboard = () => {
                   </label>
                   <select
                     className="select-primary"
-                    value={formData.role}
+                    value={userFormData.role}
                     onChange={(e) =>
-                      setFormData({ ...formData, role: e.target.value })
+                      setUserFormData({ ...userFormData, role: e.target.value })
                     }
                   >
                     <option value="student">Student</option>
@@ -401,7 +634,7 @@ const AdminDashboard = () => {
               <div className="dialog-footer gap-3">
                 <button
                   className="btn-secondary"
-                  onClick={() => setOpen(false)}
+                  onClick={() => setOpenUser(false)}
                 >
                   Cancel
                 </button>
@@ -409,11 +642,317 @@ const AdminDashboard = () => {
                   className="btn-primary gap-2"
                   onClick={handleCreateUser}
                   disabled={
-                    !formData.name || !formData.email || !formData.rollNo
+                    !userFormData.name ||
+                    !userFormData.email ||
+                    !userFormData.rollNo
                   }
                 >
                   <UserPlus className="w-4 h-4" />
                   Create User
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {openBatch && (
+          <div className="dialog-overlay" onClick={() => setOpenBatch(false)}>
+            <div
+              className="dialog-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="dialog-header flex items-center gap-3">
+                <Calendar className="w-6 h-6" />
+                Create New Batch
+              </div>
+              <div className="dialog-body space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Batch Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Batch A"
+                    className="input-primary"
+                    value={batchFormData.batchName}
+                    onChange={(e) =>
+                      setBatchFormData({
+                        ...batchFormData,
+                        batchName: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Section
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Section 1"
+                    className="input-primary"
+                    value={batchFormData.section}
+                    onChange={(e) =>
+                      setBatchFormData({
+                        ...batchFormData,
+                        section: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Project Title
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="MERN Review System"
+                    className="input-primary"
+                    value={batchFormData.projectTitle}
+                    onChange={(e) =>
+                      setBatchFormData({
+                        ...batchFormData,
+                        projectTitle: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Assign Guide
+                  </label>
+                  <select
+                    className="select-primary w-full"
+                    value={batchFormData.guideId}
+                    onChange={(e) =>
+                      setBatchFormData({
+                        ...batchFormData,
+                        guideId: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Select guide</option>
+                    {guides.map((guide) => (
+                      <option key={guide._id} value={guide._id}>
+                        {guide.name} ({guide.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Team Leader Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="John Doe"
+                    className="input-primary"
+                    value={batchFormData.teamLeaderName}
+                    onChange={(e) =>
+                      setBatchFormData({
+                        ...batchFormData,
+                        teamLeaderName: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Team Leader Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="leader@college.edu"
+                    className="input-primary"
+                    value={batchFormData.teamLeaderEmail}
+                    onChange={(e) =>
+                      setBatchFormData({
+                        ...batchFormData,
+                        teamLeaderEmail: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Team Leader Roll No
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="STU002"
+                    className="input-primary"
+                    value={batchFormData.teamLeaderRollNo}
+                    onChange={(e) =>
+                      setBatchFormData({
+                        ...batchFormData,
+                        teamLeaderRollNo: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="dialog-footer gap-3">
+                <button
+                  className="btn-secondary"
+                  onClick={() => setOpenBatch(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-success gap-2"
+                  onClick={handleCreateBatch}
+                  disabled={
+                    !batchFormData.batchName ||
+                    !batchFormData.projectTitle ||
+                    !batchFormData.guideId ||
+                    !batchFormData.teamLeaderName ||
+                    !batchFormData.teamLeaderEmail ||
+                    !batchFormData.teamLeaderRollNo
+                  }
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Create Batch
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Modal */}
+        {openSettings && (
+          <div
+            className="modal modal-open"
+            onClick={() => setOpenSettings(false)}
+          >
+            <div
+              className="modal-box max-w-2xl glass-card p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="font-bold text-2xl flex items-center gap-3 mb-8">
+                <SettingsIcon className="w-8 h-8 text-amber-600" />
+                Review Period Settings (Global)
+              </h3>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="label">
+                    <span className="label-text font-semibold">
+                      Review Start Date
+                    </span>
+                  </label>
+                  <input
+                    type="date"
+                    className="input input-bordered w-full input-lg"
+                    value={
+                      settingsData.reviewStartDate
+                        ? new Date(settingsData.reviewStartDate)
+                            .toISOString()
+                            .split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setSettingsData({
+                        ...settingsData,
+                        reviewStartDate: e.target.value
+                          ? new Date(e.target.value)
+                          : null,
+                      })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="label">
+                    <span className="label-text font-semibold">
+                      Review End Date
+                    </span>
+                  </label>
+                  <input
+                    type="date"
+                    className="input input-bordered w-full input-lg"
+                    value={
+                      settingsData.reviewEndDate
+                        ? new Date(settingsData.reviewEndDate)
+                            .toISOString()
+                            .split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setSettingsData({
+                        ...settingsData,
+                        reviewEndDate: e.target.value
+                          ? new Date(e.target.value)
+                          : null,
+                      })
+                    }
+                  />
+                  {settingsData.reviewStartDate &&
+                    settingsData.reviewEndDate && (
+                      <p className="text-sm text-info mt-1">
+                        Range:{" "}
+                        {new Date(
+                          settingsData.reviewStartDate,
+                        ).toLocaleDateString()}
+                        →{" "}
+                        {new Date(
+                          settingsData.reviewEndDate,
+                        ).toLocaleDateString()}
+                        (
+                        {Math.ceil(
+                          (new Date(settingsData.reviewEndDate) -
+                            new Date(settingsData.reviewStartDate)) /
+                            (1000 * 60 * 60 * 24),
+                        )}{" "}
+                        days)
+                      </p>
+                    )}
+                </div>
+
+                <div>
+                  <label className="label">
+                    <span className="label-text font-semibold">
+                      Slots Per Day (per guide)
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    className="input input-bordered w-full input-lg"
+                    value={settingsData.slotsPerDay || ""}
+                    onChange={(e) =>
+                      setSettingsData({
+                        ...settingsData,
+                        slotsPerDay: parseInt(e.target.value) || 10,
+                      })
+                    }
+                    placeholder="10"
+                  />
+                  <p className="text-sm text-gray-600 mt-1">
+                    Max 20 recommended
+                  </p>
+                </div>
+              </div>
+
+              <div className="modal-action mt-8">
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => setOpenSettings(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-warning gap-2"
+                  onClick={handleUpdateSettings}
+                  disabled={
+                    !settingsData.reviewStartDate || !settingsData.reviewEndDate
+                  }
+                >
+                  <Calendar className="w-5 h-5" />
+                  {new Date(settingsData.reviewStartDate || 0) > new Date()
+                    ? "Schedule"
+                    : "Update"}{" "}
+                  Range
                 </button>
               </div>
             </div>

@@ -10,8 +10,10 @@ const batchSchema = new mongoose.Schema(
     guideId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
+      default: null,
     },
+    section: { type: String, default: "", trim: true },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },

@@ -76,6 +76,17 @@ const sendBookingEmail = async (email, type, data) => {
       <h2>Slot request rejected</h2>
       <p>Please book another slot.</p>
     `;
+  } else if (type === "admin-notify") {
+    subject = "New Slot Booking Pending Approval";
+    html = `
+      <h2>New slot booking request</h2>
+      <p><strong>Batch:</strong> ${data.batchName}</p>
+      <p><strong>Date:</strong> ${new Date(data.date).toLocaleDateString()}</p>
+      <p><strong>Slot:</strong> ${data.slotNumber}</p>
+      <p><strong>Student:</strong> ${data.studentName}</p>
+      <p><strong>Status:</strong> Pending Approval</p>
+      <p>Please review in admin panel.</p>
+    `;
   }
 
   const mailOptions = {

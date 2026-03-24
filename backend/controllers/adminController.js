@@ -89,13 +89,136 @@ const deleteBooking = async (req, res) => {
   await Booking.findByIdAndDelete(req.params.id);
   res.json({ message: "Booking deleted" });
 };
+// Get all guides
+const getGuides = async (req, res) => {
+  const guides = await User.find({ role: "guide", isActive: true }).sort({
+    name: 1,
+  });
+  res.json(guides);
+};
+// Get all batches
+const getBatches = async (req, res) => {
+  const batches = await Batch.find()
+    .populate("guideId", "name email")
+    .sort({ batchName: 1 });
+  res.json(batches);
+};
+
+// Delete batch
+const deleteBatch = async (req, res) => {
+  await Batch.findByIdAndDelete(req.params.id);
+  res.json({ message: "Batch deleted" });
+};
+
+// HOD Approve booking (admin approval)
+const approveBookingHOD = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findOneAndUpdate(
+      { _id: id, status: "pending" },
+      { status: "approved" },
+      { new: true },
+    )
+      .populate("batchId", "teamLeaderEmail batchName")
+      .populate("guideId", "name");
+
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ message: "Booking not found or already approved" });
+    }
+
+    // Send approval email to student
+    await sendBookingEmail(booking.batchId.teamLeaderEmail, "approved", {
+      batchName: booking.batchId.batchName,
+      date: booking.date,
+      slotNumber: booking.slotNumber,
+      guideName: booking.guideId?.name || "Admin",
+    });
+
+    res.json({ message: "Booking approved by HOD", booking });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// HOD Reject booking
+const rejectBookingHOD = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findOneAndUpdate(
+      { _id: id },
+      { status: "rejected" },
+      { new: true },
+    ).populate("batchId", "teamLeaderEmail batchName");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Send rejection email
+    await sendBookingEmail(booking.batchId.teamLeaderEmail, "rejected", {
+      batchName: booking.batchId.batchName,
+    });
+
+    res.json({ message: "Booking rejected by HOD", booking });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Generate report for download
+const generateReportAPI = async (req, res) => {
+  try {
+    const { format = "json" } = req.query;
+    const { generateReport } = require("../utils/reports");
+
+    const report = await generateReport(format);
+
+    if (format === "excel") {
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=slot-bookings.xlsx",
+      );
+      res.send(report);
+    } else if (format === "pdf") {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=slot-bookings.pdf",
+      );
+      res.send(report);
+    } else if (format === "csv") {
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=slot-bookings.csv",
+      );
+      res.send(report);
+    } else {
+      res.json(report);
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 module.exports = {
   createUser,
   createBatch,
   assignGuidesToBatches,
+  getBatches,
+  deleteBatch,
+  approveBookingHOD,
+  rejectBookingHOD,
+  generateReportAPI,
   getSettings,
   updateSettings,
   getAllBookings,
+  getGuides,
   deleteBooking,
 };

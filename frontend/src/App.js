@@ -9,7 +9,6 @@ import {
 import { BrowserRouter as Router } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Toaster from "./components/Toaster";
-import { DarkModeProvider, useDarkMode } from "./contexts/DarkModeContext";
 import Navbar from "./components/Navbar";
 import CollegeHeader from "./components/CollegeHeader";
 import Login from "./pages/Login";
@@ -20,8 +19,12 @@ const GuideDashboard = lazy(() => import("./pages/GuideDashboard"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 
 function AppContent() {
-  const [user, setUser] = useState(null);
-  const { isDark, toggleDarkMode } = useDarkMode();
+  const [user, setUser] = useState(() => {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    const name = localStorage.getItem("userName");
+    return token && role ? { role, name } : null;
+  });
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -31,12 +34,15 @@ function AppContent() {
     const name = localStorage.getItem("userName");
     if (token && role) {
       setUser({ role, name });
+    } else {
+      setUser(null);
     }
   }, []);
 
   const RequireAuth = ({ children, allowedRole }) => {
+    const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    if (!user || role !== allowedRole) {
+    if (!token || role !== allowedRole) {
       return <Navigate to="/login" replace state={{ from: location }} />;
     }
     return children;
@@ -45,10 +51,8 @@ function AppContent() {
   const isAuthenticated = !!localStorage.getItem("token");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-base-50 to-base-100 dark:from-base-900 dark:to-base-800 transition-all duration-300">
-      {isAuthenticated && (
-        <Navbar toggleDarkMode={toggleDarkMode} isDark={isDark} />
-      )}
+    <div className="min-h-screen bg-white transition-all duration-300">
+      {isAuthenticated && <Navbar />}
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {isAuthenticated && <CollegeHeader />}
         <AnimatePresence mode="wait">
@@ -125,9 +129,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <DarkModeProvider>
-        <AppContent />
-      </DarkModeProvider>
+      <AppContent />
     </Router>
   );
 }

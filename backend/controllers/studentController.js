@@ -19,13 +19,13 @@ const getStudentBatch = async (req, res) => {
       return res.status(404).json({ message: "Batch not found" });
     }
 
-    // Check existing booking
-    const existingBooking = await Booking.findOne({
+    // Get student bookings (multiple)
+    const bookings = await Booking.find({
       batchId: batch._id,
       status: { $in: ["pending", "approved"] },
     });
 
-    res.json({ batch, existingBooking });
+    res.json({ batch, bookings });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -34,17 +34,47 @@ const getStudentBatch = async (req, res) => {
 // Book slot
 const bookSlot = async (req, res) => {
   try {
-    const { date, slotNumber } = req.body;
-    const settings = await Settings.findOne();
+    const { date: dateStr, slotNumber, batchId } = req.body;
 
-    // Validate date range
-    if (date < settings.reviewStartDate || date > settings.reviewEndDate) {
-      return res.status(400).json({ message: "Date out of allowed range" });
+    // Ensure date is valid
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return res
+        .status(400)
+        .json({ message: "Invalid date format. Use YYYY-MM-DD" });
     }
 
-    // Check slot availability
+    // Get settings (create if none exists)
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({
+        reviewStartDate: new Date(),
+        reviewEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
+        slotsPerDay: 10,
+      });
+      await settings.save();
+    }
+
+    const startDate = new Date(settings.reviewStartDate);
+    const endDate = new Date(settings.reviewEndDate);
+
+    // Validate date range (proper Date comparison)
+    if (date < startDate || date > endDate) {
+      return res.status(400).json({
+        message: `Date out of allowed range (${startDate.toISOString().split("T")[0]} to ${endDate.toISOString().split("T")[0]})`,
+      });
+    }
+
+    // Validate slot number
+    if (slotNumber < 1 || slotNumber > settings.slotsPerDay) {
+      return res.status(400).json({
+        message: `Slot must be between 1 and ${settings.slotsPerDay}`,
+      });
+    }
+
+    // Check slot availability for this date (convert date for query)
     const existingSlot = await Booking.findOne({
-      date,
+      date: dateStr, // MongoDB stores as string from frontend
       slotNumber,
       status: { $ne: "rejected" },
     });
@@ -54,44 +84,75 @@ const bookSlot = async (req, res) => {
     }
 
     // Find batch
-    const batch = await Batch.findOne({
-      $or: [
-        { teamLeaderEmail: req.user.email },
-        { teamLeaderRollNo: req.user.rollNo },
-      ],
-    });
-
-    if (!batch) {
-      return res.status(404).json({ message: "Batch not found" });
+    let batch;
+    if (batchId) {
+      batch = await Batch.findById(batchId).populate("guideId", "name email");
+      if (!batch) {
+        return res.status(404).json({ message: "Specified batch not found" });
+      }
+    } else {
+      batch = await Batch.findOne({
+        $or: [
+          { teamLeaderEmail: req.user.email },
+          { teamLeaderRollNo: req.user.rollNo },
+        ],
+      }).populate("guideId", "name email");
+      if (!batch) {
+        return res.status(404).json({ message: "Your batch not found" });
+      }
     }
 
-    // Create booking
+    if (!batch.guideId) {
+      return res.status(400).json({ message: "Batch has no assigned guide" });
+    }
+
+    // Create booking (store date as string for consistency)
     const booking = new Booking({
       batchId: batch._id,
-      date,
+      date: dateStr,
       slotNumber,
       studentId: req.user._id,
-      guideId: batch.guideId,
+      guideId: batch.guideId._id,
+      status: "pending",
     });
 
     await booking.save();
 
     // Notify guide
-    const guide = await User.findById(batch.guideId);
-    await sendBookingEmail(guide.email, "booked", {
-      batchName: batch.batchName,
-      date,
-      slotNumber,
-    });
+    if (batch.guideId.email) {
+      await sendBookingEmail(batch.guideId.email, "booked", {
+        batchName: batch.batchName,
+        date: dateStr,
+        slotNumber,
+        studentName: req.user.name,
+      }).catch(console.error);
+    }
 
-    res
-      .status(201)
-      .json({
-        message: "Slot booked successfully - pending approval",
-        booking,
-      });
+    // Notify admins
+    const admins = await User.find({ role: "admin", isActive: true });
+    for (const admin of admins) {
+      await sendBookingEmail(admin.email, "admin-notify", {
+        batchName: batch.batchName,
+        date: dateStr,
+        slotNumber,
+        studentName: req.user.name,
+      }).catch(console.error);
+    }
+
+    console.log(
+      `✅ Slot booked: ${dateStr} Slot ${slotNumber} for batch ${batch.batchName}`,
+    );
+
+    res.status(201).json({
+      message: "✅ Slot booked successfully - pending approval",
+      booking,
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Booking error:", err);
+    res.status(500).json({
+      message: "Booking failed. Please check date range and try again.",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
   }
 };
 
@@ -128,8 +189,49 @@ const getAllBatches = async (req, res) => {
   }
 };
 
+const getGuideBookings = async (req, res) => {
+  try {
+    // Find student's batch and guide
+    const batch = await Batch.findOne({
+      $or: [
+        { teamLeaderEmail: req.user.email },
+        { teamLeaderRollNo: req.user.rollNo },
+      ],
+    }).populate("guideId", "name email");
+
+    if (!batch) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    const settings = await Settings.findOne();
+    const startDate = settings?.reviewStartDate;
+    const endDate = settings?.reviewEndDate;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "Review dates not configured" });
+    }
+
+    // Get all bookings for this guide in date range
+    const guideBookings = await Booking.find({
+      guideId: batch.guideId._id,
+      date: { $gte: startDate, $lte: endDate },
+    })
+      .populate("batchId", "batchName")
+      .populate("studentId", "name")
+      .sort({ date: 1, slotNumber: 1 });
+
+    res.json({
+      bookings: guideBookings,
+      settings: { reviewStartDate: startDate, reviewEndDate: endDate },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getStudentBatch,
   bookSlot,
   getAllBatches,
+  getGuideBookings,
 };

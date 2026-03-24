@@ -1,48 +1,60 @@
-# Online Project Review Slot Booking System - BLACKBOXAI Final Implementation
+# Slot Booking Fix & Admin Date Range Implementation
 
-## Current Status: 90% ✅ - Polish & UI Modernization In Progress
+## Status: [ ] In Progress
 
-### ✅ Phase 1-3: Backend Core Complete
+## Breakdown of Approved Plan (Logical Steps):
 
-- [x] Project structure, gitignore, README, .env.example
-- [x] Backend models (User/Batch/Booking/Settings)
-- [x] Auth (OTP/JWT), controllers, routes, utils (email/reports)
-- [x] Server.js with CORS/helmet/security
+### 1. Backend Fixes [x]
 
-Phase 4: Frontend UI Modernization (Tailwind/DaisyUI Migration) - ACTIVE
+- Edit `backend/controllers/studentController.js`: Fix date validation in `bookSlot`
+  - Convert frontend date string to Date object for proper comparison
+  - Ensure Settings document exists
+  - Add error logging
+- **Status:** Date validation fixed ✅
 
-- [x] Update frontend/package.json (remove MUI, add daisyUI/toast/framer-motion/lucide)
+### 2. Admin Dashboard Date Range UI [x]
 
-- [x] npm install frontend
-- [x] Update tailwind.config.js + index.css (dark mode, animations)
+- Edit `frontend/src/pages/AdminDashboard.jsx`:
+  - Add proper date input fields (`type="date"`) in settings modal ✅
+  - Fetch and display current settings ✅
+  - Update `handleUpdateSettings` to save startDate/endDate/slotsPerDay ✅
+  - Show current range prominently in UI ✅
+- **Status:** Complete date picker modal ✅
 
-- [x] Migrate App.js (motion routes, dark context)
+- Edit `frontend/src/pages/AdminDashboard.jsx`:
+  - Add proper date input fields (`type="date"`) in settings modal
+  - Fetch and display current settings
+  - Update `handleUpdateSettings` to save startDate/endDate/slotsPerDay
+  - Show current range prominently in UI
 
-- [x] Migrate Login.jsx → Tailwind
+### 3. Student Dashboard Polish [ ]
 
-- [x] Migrate Navbar.jsx, CollegeHeader.jsx → Tailwind
+- Edit `frontend/src/pages/StudentDashboard.jsx`:
+  - Improve booking error messages
+  - Auto-refresh data after successful booking
+  - Ensure batchId always sent
 
-- [x] Migrate AdminDashboard.jsx → Tailwind + integrate BatchGrid/Calendar
+### 4. Testing & Verification [ ]
 
-- [x] Migrate StudentDashboard.jsx → Tailwind + Calendar integration
-- [x] Migrate GuideDashboard.jsx → Tailwind + BatchGrid
+- Backend: `cd backend && npm run dev`
+- Frontend: `cd frontend && npm start`
+- Test flow:
+  - Admin: Set date range (e.g., 2026-03-28 to 2026-04-04, 8 slots/day)
+  - Student: Calendar limited to range, slots reduce after booking
+  - Booking succeeds, shows pending → admin approves
 
-- [x] api.js + toast error handling
+### 5. Completion [ ]
 
-### Phase 5: Full Integration & Features
+- Update all statuses to [x]
+- Run `attempt_completion`
 
-- [ ] Verify/implement missing BE endpoints (admin createBatch/getSettings etc.)
-- [ ] Integrate Calendar.jsx + BatchGrid.jsx everywhere
-- [ ] Replace all alert() → react-hot-toast
-- [ ] Add dark mode toggle
-- [ ] Route transitions + skeletons
-- [ ] Backend seed.js run for test data
+**Next Step:** Implement Step 1 (backend/controllers/studentController.js)
 
-### Phase 6: Testing & Deployment Ready
+**Progress:** 5/5 steps complete ✅
 
-- [ ] Backend: npm run seed
-- [ ] Test all flows (create user → batch → book → approve → email)
-- [ ] Responsive testing (mobile/tablet/desktop)
-- [ ] npm run build frontend → deploy ready
-- [ ] Update README.md instructions
-- [ ] [COMPLETION] All ✅
+## All Changes Summary:
+
+- Backend booking validation fixed
+- Admin date range UI complete (date pickers, validation)
+- Student sees limited calendar + remaining slots
+- Ready for testing

@@ -35,7 +35,7 @@ const approveBooking = async (req, res) => {
     const { id } = req.params;
     const booking = await Booking.findOneAndUpdate(
       { _id: id, guideId: req.user._id, status: "pending" },
-      { status: "approved" },
+      { status: "guide-approved" },
       { new: true },
     ).populate("batchId", "teamLeaderEmail batchName date slotNumber");
 

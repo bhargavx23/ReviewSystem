@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("./models/User");
 const Settings = require("./models/Settings");
+const Batch = require("./models/Batch");
 require("dotenv").config();
 
 mongoose
@@ -24,6 +25,20 @@ mongoose
       );
     }
 
+    // Create Guide
+    const guide = await User.findOne({ email: "guide@mictech.edu.in" });
+    if (!guide) {
+      const newGuide = new User({
+        name: "Guide Teacher",
+        email: "guide@mictech.edu.in",
+        rollNo: "GUIDE001",
+        role: "guide",
+        otp: "123456",
+      });
+      await newGuide.save();
+      console.log("✅ Guide created: guide@mictech.edu.in (OTP: 123456)");
+    }
+
     // Create Student
     const student = await User.findOne({
       email: "qwerty1234567890siva@gmail.com",
@@ -40,6 +55,22 @@ mongoose
       console.log(
         "✅ Student created: qwerty1234567890siva@gmail.com (OTP: 123456)",
       );
+    }
+
+    // Create Batch
+    const existingBatch = await Batch.findOne({ batchName: "Batch A" });
+    if (!existingBatch) {
+      const guideUser = await User.findOne({ email: "guide@mictech.edu.in" });
+      const newBatch = new Batch({
+        batchName: "Batch A",
+        projectTitle: "MERN Stack Project Review System",
+        teamLeaderName: "Siva Student",
+        teamLeaderEmail: "qwerty1234567890siva@gmail.com",
+        teamLeaderRollNo: "STU001",
+        guideId: guideUser._id,
+      });
+      await newBatch.save();
+      console.log("✅ Batch created: Batch A");
     }
 
     // Default Settings
