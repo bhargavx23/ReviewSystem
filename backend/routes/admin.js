@@ -19,7 +19,7 @@ const {
 const router = express.Router();
 
 router.use(auth);
-router.use(roleAuth(["admin"]));
+router.use(roleAuth(["admin", "hod"]));
 
 // Users
 router.post("/users", createUser);

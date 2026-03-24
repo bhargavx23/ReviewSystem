@@ -177,7 +177,7 @@ const AdminDashboard = () => {
       setActionLoading(id);
       showToast("Rejecting booking...", "loading");
       await adminAPI.rejectBookingHOD(id);
-      showToast("Booking rejected!", "error");
+      showToast("Booking rejected!", "success");
       fetchData();
     } catch (err) {
       showToast(
