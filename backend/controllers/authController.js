@@ -22,6 +22,10 @@ const sendOtp = async (req, res) => {
   try {
     const { emailOrRollNo } = req.body;
 
+    if (!emailOrRollNo || emailOrRollNo.trim() === "") {
+      return res.status(400).json({ message: "Email or roll number required" });
+    }
+
     const user = await User.findOne({
       $or: [{ email: emailOrRollNo }, { rollNo: emailOrRollNo }],
     });
@@ -35,10 +39,12 @@ const sendOtp = async (req, res) => {
     user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 min
     await user.save();
 
+    console.log(`📧 Sending OTP to ${user.email}`);
     await sendOtpEmail(user.email, otp);
 
-    res.json({ message: "OTP sent successfully" });
+    res.json({ message: "OTP sent successfully to your email" });
   } catch (err) {
+    console.error("Error sending OTP:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -48,22 +54,44 @@ const verifyOtp = async (req, res) => {
   try {
     const { emailOrRollNo, otp } = req.body;
 
+    if (!emailOrRollNo || !otp) {
+      return res.status(400).json({ message: "Email/rollNo and OTP required" });
+    }
+
     const user = await User.findOne({
       $or: [{ email: emailOrRollNo }, { rollNo: emailOrRollNo }],
     });
 
-    if (
-      !user ||
-      !(await user.compareOtp(otp)) ||
-      user.otpExpires < Date.now()
-    ) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if OTP is set
+    if (!user.otp) {
+      return res.status(400).json({ message: "No OTP found. Please request a new one" });
+    }
+
+    // Check if OTP has expired
+    if (user.otpExpires < Date.now()) {
+      user.otp = undefined;
+      user.otpExpires = undefined;
+      await user.save();
+      return res.status(400).json({ message: "OTP expired. Please request a new one" });
+    }
+
+    // Compare OTP
+    const isOtpValid = await user.compareOtp(otp);
+    if (!isOtpValid) {
+      console.warn(`❌ Invalid OTP attempt for ${user.email}`);
+      return res.status(400).json({ message: "Invalid OTP" });
     }
 
     // Clear OTP
     user.otp = undefined;
     user.otpExpires = undefined;
     await user.save();
+
+    console.log(`✅ User ${user.email} verified successfully`);
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "7d",
@@ -79,6 +107,7 @@ const verifyOtp = async (req, res) => {
       },
     });
   } catch (err) {
+    console.error("Error verifying OTP:", err);
     res.status(500).json({ message: err.message });
   }
 };

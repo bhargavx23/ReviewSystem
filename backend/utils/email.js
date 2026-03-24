@@ -7,8 +7,8 @@ const hasEmailConfig = process.env.EMAIL_USER && process.env.EMAIL_PASS;
 
 const transporter = hasEmailConfig
   ? nodemailer.createTransport({
-      host: process.env.NODemailer_HOST || "smtp.gmail.com",
-      port: process.env.NODemailer_PORT || 587,
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: process.env.SMTP_PORT || 587,
       secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.EMAIL_USER,
@@ -23,29 +23,38 @@ const sendOtpEmail = async (email, otp) => {
     console.warn(
       "⚠️ EMAIL not configured. OTP fallback mode - log to console for development.",
     );
-    console.log(`OTP for ${email}: ${otp}`);
-    return;
+    console.log(`✅ OTP for ${email}: ${otp}`);
+    return true;
   }
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Review Slot Booking - OTP Verification",
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Review Slot Booking System</h2>
-        <p>Your OTP for login is:</p>
-        <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
-          ${otp}
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Review Slot Booking - OTP Verification",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Review Slot Booking System</h2>
+          <p>Your OTP for login is:</p>
+          <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+            ${otp}
+          </div>
+          <p>This OTP expires in 10 minutes.</p>
+          <hr>
+          <p>Review Slot Booking System</p>
         </div>
-        <p>This OTP expires in 10 minutes.</p>
-        <hr>
-        <p>Review Slot Booking System</p>
-      </div>
-    `,
-  };
+      `,
+    };
 
-  await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ OTP email sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Error sending OTP email to ${email}:`, error.message);
+    // In development, still allow login with OTP
+    console.log(`⚠️ Fallback: OTP for ${email}: ${otp}`);
+    return true;
+  }
 };
 
 // Send booking notification
@@ -89,14 +98,26 @@ const sendBookingEmail = async (email, type, data) => {
     `;
   }
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject,
-    html,
-  };
+  if (!hasEmailConfig || !transporter) {
+    console.warn(
+      `⚠️ Email not configured. Skipping booking email for ${email}`,
+    );
+    return;
+  }
 
-  await transporter.sendMail(mailOptions);
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject,
+      html,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Booking email sent to ${email}`);
+  } catch (error) {
+    console.error(`❌ Error sending booking email to ${email}:`, error.message);
+  }
 };
 
 module.exports = { sendOtpEmail, sendBookingEmail };

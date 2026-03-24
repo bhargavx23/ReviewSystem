@@ -3,9 +3,10 @@ const User = require("./models/User");
 const Settings = require("./models/Settings");
 const Batch = require("./models/Batch");
 require("dotenv").config();
+const { getMongoUri } = require("./utils/db");
 
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(getMongoUri())
   .then(async () => {
     console.log("🔗 MongoDB Connected - Seeding Data...");
 
@@ -26,17 +27,31 @@ mongoose
     }
 
     // Create Guide
-    const guide = await User.findOne({ email: "guide@mictech.edu.in" });
+    const guide = await User.findOne({ email: "hemaswarupbande5@gmail.com" });
     if (!guide) {
       const newGuide = new User({
-        name: "Guide Teacher",
-        email: "guide@mictech.edu.in",
+        name: "Hema Swarup Guide",
+        email: "hemaswarupbande5@gmail.com",
         rollNo: "GUIDE001",
         role: "guide",
         otp: "123456",
       });
       await newGuide.save();
-      console.log("✅ Guide created: guide@mictech.edu.in (OTP: 123456)");
+      console.log("✅ Guide created: hemaswarupbande5@gmail.com (OTP: 123456)");
+    }
+
+    // Create Additional Student
+    const student2 = await User.findOne({ email: "ssnb240@gmail.com" });
+    if (!student2) {
+      const newStudent2 = new User({
+        name: "SSNB Student",
+        email: "ssnb240@gmail.com",
+        rollNo: "STU002",
+        role: "student",
+        otp: "123456",
+      });
+      await newStudent2.save();
+      console.log("✅ Student created: ssnb240@gmail.com (OTP: 123456)");
     }
 
     // Create Student
@@ -60,7 +75,9 @@ mongoose
     // Create Batch
     const existingBatch = await Batch.findOne({ batchName: "Batch A" });
     if (!existingBatch) {
-      const guideUser = await User.findOne({ email: "guide@mictech.edu.in" });
+      const guideUser = await User.findOne({
+        email: "hemaswarupbande5@gmail.com",
+      });
       const newBatch = new Batch({
         batchName: "Batch A",
         projectTitle: "MERN Stack Project Review System",
