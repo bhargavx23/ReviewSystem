@@ -51,9 +51,10 @@ const StudentDashboard = () => {
         studentAPI.getAllBatches(),
       ]);
       const batchFromApi = myBatchRes.data?.batch || null;
+      const myBookingsFromApi = myBatchRes.data?.bookings || [];
       setMyBatch(batchFromApi);
       setActiveBatch(batchFromApi);
-      setMyBookings(myBatchRes.data?.bookings || []);
+      setMyBookings(myBookingsFromApi);
       setGuideData(guideRes.data || { bookings: [], settings: {} });
 
       const batches = allBatchesRes.data || [];
@@ -68,7 +69,7 @@ const StudentDashboard = () => {
         remaining: batches.length - approved - pending,
       });
 
-      setHasApprovedBooking(myBookings.some((b) => b.status === "approved"));
+      setHasApprovedBooking(myBookingsFromApi.some((b) => b.status === "approved"));
     } catch (err) {
       console.error("Error fetching data:", err);
       if (err.response?.status !== 404) {
@@ -370,6 +371,19 @@ const StudentDashboard = () => {
                 ? "✅ Slot approved. One booking per student."
                 : "Click dates to book slots. Colors show availability."}
             </p>
+            {!hasApprovedBooking && (
+              <div className="mb-6">
+                <button
+                  className="custom-btn-primary"
+                  onClick={() => {
+                    const today = new Date().toISOString().split("T")[0];
+                    handleDateSelect(today);
+                  }}
+                >
+                  Book Today
+                </button>
+              </div>
+            )}
           </div>
           <BookingCalendar
             settings={guideData.settings}
