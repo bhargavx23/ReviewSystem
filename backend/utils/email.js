@@ -1,7 +1,9 @@
 const nodemailer = require("nodemailer");
 const dotenv = require("dotenv");
+const path = require("path");
 
-dotenv.config();
+// Ensure backend .env is loaded even if process started from a different cwd
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 const hasEmailConfig = process.env.EMAIL_USER && process.env.EMAIL_PASS;
 

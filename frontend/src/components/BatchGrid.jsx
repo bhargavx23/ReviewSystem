@@ -8,8 +8,8 @@ const BatchGrid = ({ batches, onBatchClick, className = "" }) => {
     const statuses = {
       approved: {
         badge: "badge-success",
-        border: "border-emerald-500/50",
-        iconBg: "from-emerald-400 to-green-500",
+        border: "border-accent-500/50",
+        iconBg: "from-accent-400 to-accent-500",
       },
       pending: {
         badge: "badge-warning",

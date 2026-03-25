@@ -4,7 +4,7 @@ const getMongoUri = () => {
   if (!uri || uri.includes("your_mongodb_connection_string_here")) {
     uri = "mongodb://localhost:27017/reviewslotbooking";
     console.log(`📍 Using local fallback MongoDB URI (ignored placeholder)`);
-  } else if (!uri.match(/^mongodb(s?:\/\/)/)) {
+  } else if (!uri.match(/^mongodb(?:\+srv)?:\/\//i)) {
     uri = "mongodb://" + uri;
     console.log("📍 Added mongodb:// scheme to URI");
   }

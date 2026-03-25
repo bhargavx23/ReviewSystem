@@ -18,6 +18,10 @@
     "react-scripts": "5.0.1",
     "tailwind-merge": "^2.3.0"
   },
+  "optionalDependencies": {
+    "jspdf": "^2.5.1",
+    "html2canvas": "^1.4.1"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",

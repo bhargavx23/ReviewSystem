@@ -10,7 +10,7 @@ import { BrowserRouter as Router } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Toaster from "./components/Toaster";
 import Navbar from "./components/Navbar";
-import CollegeHeader from "./components/CollegeHeader";
+
 import Login from "./pages/Login";
 import { Sun, Moon } from "lucide-react";
 
@@ -39,10 +39,10 @@ function AppContent() {
     }
   }, []);
 
-  const RequireAuth = ({ children, allowedRole }) => {
+  const RequireAuth = ({ children, allowedRoles }) => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    if (!token || role !== allowedRole) {
+    if (!token || !role || !allowedRoles?.includes(role)) {
       return <Navigate to="/login" replace state={{ from: location }} />;
     }
     return children;
@@ -53,8 +53,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-white transition-all duration-300">
       {isAuthenticated && <Navbar />}
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {isAuthenticated && <CollegeHeader />}
+      <main className="container mx-auto px-4 py-6 max-w-6xl">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route
@@ -72,7 +71,24 @@ function AppContent() {
             <Route
               path="/admin"
               element={
-                <RequireAuth allowedRole="admin">
+                <RequireAuth allowedRoles={["admin", "hod"]}>
+                  <Suspense fallback={<div className="skeleton h-64" />}>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <AdminDashboard />
+                    </motion.div>
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
+
+            <Route
+              path="/admin/hod"
+              element={
+                <RequireAuth allowedRoles={["admin", "hod"]}>
                   <Suspense fallback={<div className="skeleton h-64" />}>
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -88,7 +104,7 @@ function AppContent() {
             <Route
               path="/guide"
               element={
-                <RequireAuth allowedRole="guide">
+                <RequireAuth allowedRoles={["guide"]}>
                   <Suspense fallback={<div className="skeleton h-64" />}>
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -101,10 +117,11 @@ function AppContent() {
                 </RequireAuth>
               }
             />
+
             <Route
               path="/student"
               element={
-                <RequireAuth allowedRole="student">
+                <RequireAuth allowedRoles={["student"]}>
                   <Suspense fallback={<div className="skeleton h-64" />}>
                     <motion.div
                       initial={{ opacity: 0 }}

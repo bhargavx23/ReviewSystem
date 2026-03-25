@@ -42,14 +42,25 @@ const BookingCalendar = ({
   const renderEventContent = (eventInfo) => {
     const { slotNumber, status } = eventInfo.event.extendedProps;
     const Icon = getEventIcon(status);
+    const dayStr = eventInfo.event.startStr.split("T")[0];
+    const dayBookings = bookings.filter(
+      (b) => new Date(b.date).toISOString().split("T")[0] === dayStr,
+    );
+    const bookedCount = dayBookings.length;
+    const totalSlots = settings?.slotsPerDay || 10;
 
     return (
-      <div className="flex items-center gap-1 p-1 text-xs font-medium min-w-[80px]">
-        <Icon
-          className="w-3 h-3 flex-shrink-0"
-          style={{ color: getEventColor(status) }}
-        />
-        <span>{slotNumber}</span>
+      <div className="flex flex-col gap-1.5 p-1.5 text-sm font-semibold min-w-[75px] h-[50px] justify-center items-center">
+        <div className="flex items-center gap-1.5">
+          <Icon
+            className="w-4 h-4 flex-shrink-0"
+            style={{ color: getEventColor(status) }}
+          />
+          <span className="font-bold text-sm">{slotNumber}</span>
+        </div>
+        <div className="text-xs opacity-90 font-mono tracking-wide">
+          {bookedCount}/{totalSlots}
+        </div>
       </div>
     );
   };
@@ -99,7 +110,8 @@ const BookingCalendar = ({
           height={height}
           slotMinTime="09:00:00"
           slotMaxTime="17:00:00"
-          dayMaxEvents={3}
+          dayMaxEvents={2}
+          moreLinkClick="popover"
           eventDisplay="block"
           eventTimeFormat={{
             hour: "2-digit",
@@ -121,34 +133,43 @@ const BookingCalendar = ({
           nowIndicator={true}
           eventDidMount={(info) => {
             info.el.classList.add(
-              "!rounded-xl",
-              "shadow-md",
-              "backdrop-blur-sm",
+              "!rounded-2xl",
+              "shadow-lg",
+              "backdrop-blur-md",
+              "border-2",
+              "border-white/20",
+              "hover:scale-[1.05]",
+              "transition-all",
             );
           }}
         />
       </div>
 
       {/* Legend */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-emerald-500 rounded" />
-          <span className="text-sm font-medium">Approved</span>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-8 border-t-2 border-gray-200/60 dark:border-gray-700/60 rounded-t-2xl bg-gradient-to-r from-gray-50/70 to-primary-50/70 dark:from-slate-900/50 dark:to-slate-800/50 p-6">
+        <div className="flex items-center gap-3 p-3 bg-accent-500/10 rounded-2xl border border-accent-200/50 dark:border-accent-400/50">
+          <div className="w-5 h-5 bg-accent-500 rounded-lg shadow-md" />
+          <span className="text-sm font-bold text-accent-900 dark:text-accent-300">
+            Approved
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-amber-500 rounded" />
-          <span className="text-sm font-medium">Pending</span>
+        <div className="flex items-center gap-3 p-3 bg-amber-500/10 rounded-2xl border border-amber-200/50 dark:border-amber-400/50">
+          <div className="w-5 h-5 bg-amber-500 rounded-lg shadow-md" />
+          <span className="text-sm font-bold text-amber-900 dark:text-amber-300">
+            Pending
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-500 rounded" />
-          <span className="text-sm font-medium">Rejected</span>
+        <div className="flex items-center gap-3 p-3 bg-red-500/10 rounded-2xl border border-red-200/50 dark:border-red-400/50">
+          <div className="w-5 h-5 bg-red-500 rounded-lg shadow-md" />
+          <span className="text-sm font-bold text-red-900 dark:text-red-300">
+            Rejected
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <div
-            className="w-4 h-4 bg-gray-500 rounded cursor-pointer"
-            onClick={handleDateClick}
-          />
-          <span className="text-sm font-medium">Click to Book</span>
+        <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-2xl border border-primary/50 cursor-pointer hover:bg-primary/20 transition-all">
+          <div className="w-5 h-5 bg-primary rounded-lg shadow-md" />
+          <span className="text-sm font-bold text-primary hover:text-primary/90">
+            Available
+          </span>
         </div>
       </div>
     </motion.div>
