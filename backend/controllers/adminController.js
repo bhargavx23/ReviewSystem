@@ -1,38 +1,118 @@
+const mongoose = require("mongoose");
 const User = require("../models/User");
 const Batch = require("../models/Batch");
 const Booking = require("../models/Booking");
 const Settings = require("../models/Settings");
 const { sendBookingEmail } = require("../utils/email");
 
-// Create user (admin only)
+// Create user (admin only) - FIXED
 const createUser = async (req, res) => {
   try {
     const { name, email, rollNo, role } = req.body;
 
+    // Trim and validate
+    if (!name?.trim() || !email?.trim() || !rollNo?.trim() || !role) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
     const existingUser = await User.findOne({
-      $or: [{ email }, { rollNo }],
+      $or: [{ email: email.trim().toLowerCase() }, { rollNo: rollNo.trim() }],
     });
 
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({
+        message: `User exists: ${existingUser.email || existingUser.rollNo}`,
+      });
     }
 
-    const user = new User({ name, email, rollNo, role });
+    const user = new User({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      rollNo: rollNo.trim(),
+      role,
+      isActive: true,
+    });
     await user.save();
+
+    console.log(`✅ Created user: ${user.name} (${user.role})`);
 
     res.status(201).json(user);
   } catch (err) {
+    console.error("❌ createUser error:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
-// Create batch
+// Create batch - FIXED with full validation
 const createBatch = async (req, res) => {
   try {
-    const batch = new Batch(req.body);
+    const {
+      batchName,
+      projectTitle,
+      teamLeaderName,
+      teamLeaderEmail,
+      teamLeaderRollNo,
+      guideId,
+      section,
+    } = req.body;
+
+    // Required fields validation
+    if (
+      !batchName?.trim() ||
+      !projectTitle?.trim() ||
+      !teamLeaderName?.trim() ||
+      !teamLeaderEmail?.trim()
+    ) {
+      return res.status(400).json({
+        message:
+          "batchName, projectTitle, teamLeaderName, teamLeaderEmail are required",
+      });
+    }
+
+    if (!guideId || !mongoose.Types.ObjectId.isValid(guideId)) {
+      return res
+        .status(400)
+        .json({ message: "Valid guideId (ObjectId) is required" });
+    }
+
+    // Check guide exists and active
+    const guide = await User.findOne({
+      _id: guideId,
+      role: "guide",
+      isActive: true,
+    });
+    if (!guide) {
+      return res.status(404).json({ message: "Active guide not found" });
+    }
+
+    const batchData = {
+      batchName: batchName.trim(),
+      projectTitle: projectTitle.trim(),
+      teamLeaderName: teamLeaderName.trim(),
+      teamLeaderEmail: teamLeaderEmail.trim().toLowerCase(),
+      teamLeaderRollNo: teamLeaderRollNo?.trim() || "",
+      guideId: guide._id,
+      section: section?.trim() || "",
+      isActive: true,
+    };
+
+    // Check duplicate batchName
+    const existingBatch = await Batch.findOne({
+      batchName: batchData.batchName,
+    });
+    if (existingBatch) {
+      return res.status(400).json({ message: "Batch name already exists" });
+    }
+
+    const batch = new Batch(batchData);
     await batch.save();
+    await batch.populate("guideId", "name email");
+
+    console.log(`✅ Created batch: ${batch.batchName} → Guide: ${guide.name}`);
+
     res.status(201).json(batch);
   } catch (err) {
+    console.error("❌ createBatch error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -57,12 +137,26 @@ const assignGuidesToBatches = async (req, res) => {
   }
 };
 
-// Get settings
+// Get settings - FIXED with proper defaults for review settings
 const getSettings = async (req, res) => {
-  let settings = await Settings.findOne();
-  if (!settings) settings = new Settings();
-  await settings.save();
-  res.json(settings);
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      // Create with sensible defaults for review period
+      settings = new Settings({
+        reviewStartDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        reviewEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week
+        slotsPerDay: 10,
+        totalBatches: 51,
+        totalGuides: 20,
+      });
+      await settings.save();
+    }
+    res.json(settings);
+  } catch (err) {
+    console.error("❌ getSettings error:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // Update settings
@@ -119,6 +213,57 @@ const getBatches = async (req, res) => {
     .populate("guideId", "name email")
     .sort({ batchName: 1 });
   res.json(batches);
+};
+
+// Update batch
+const updateBatch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      batchName,
+      projectTitle,
+      teamLeaderName,
+      teamLeaderEmail,
+      teamLeaderRollNo,
+      guideId,
+      section,
+    } = req.body;
+
+    if (!id) return res.status(400).json({ message: "Batch ID required" });
+
+    // Validate guide if provided
+    if (guideId && !mongoose.Types.ObjectId.isValid(guideId)) {
+      return res.status(400).json({ message: "Invalid guideId" });
+    }
+
+    if (guideId) {
+      const guide = await User.findOne({ _id: guideId, role: "guide" });
+      if (!guide) return res.status(404).json({ message: "Guide not found" });
+    }
+
+    const update = {};
+    if (batchName) update.batchName = batchName.trim();
+    if (projectTitle) update.projectTitle = projectTitle.trim();
+    if (teamLeaderName) update.teamLeaderName = teamLeaderName.trim();
+    if (teamLeaderEmail)
+      update.teamLeaderEmail = teamLeaderEmail.trim().toLowerCase();
+    if (teamLeaderRollNo !== undefined)
+      update.teamLeaderRollNo = teamLeaderRollNo?.trim() || "";
+    if (guideId !== undefined) update.guideId = guideId || null;
+    if (section !== undefined) update.section = section?.trim() || "";
+
+    const batch = await Batch.findByIdAndUpdate(id, update, {
+      new: true,
+    }).populate("guideId", "name email");
+
+    if (!batch) return res.status(404).json({ message: "Batch not found" });
+
+    console.log(`✅ Batch updated: ${batch.batchName} (${id})`);
+    res.json(batch);
+  } catch (err) {
+    console.error("❌ updateBatch error:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // Delete batch
@@ -261,6 +406,7 @@ module.exports = {
   createBatch,
   assignGuidesToBatches,
   getBatches,
+  updateBatch,
   deleteBatch,
   approveBookingHOD,
   rejectBookingHOD,

@@ -72,15 +72,54 @@ const bookSlot = async (req, res) => {
       });
     }
 
-    // Check slot availability for this date (convert date for query)
+    // Normalize booking date for same-day comparisons (ignore time components)
+    const bookingDate = new Date(
+      Date.UTC(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate(),
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
+    const bookingDateEnd = new Date(bookingDate);
+    bookingDateEnd.setUTCHours(23, 59, 59, 999);
+
+    // Check slot availability for this date via range query
     const existingSlot = await Booking.findOne({
-      date: dateStr, // MongoDB stores as string from frontend
+      date: { $gte: bookingDate, $lte: bookingDateEnd },
       slotNumber,
-      status: { $ne: "rejected" },
+      status: { $nin: ["rejected"] },
     });
 
     if (existingSlot) {
       return res.status(400).json({ message: "Slot already taken" });
+    }
+
+    // Check if student already has approved booking (NEW)
+    const existingApproved = await Booking.findOne({
+      studentId: req.user._id,
+      status: "approved",
+    });
+    if (existingApproved) {
+      return res.status(400).json({
+        message: "Cannot book another slot. Your previous booking is approved.",
+      });
+    }
+
+    // Prevent multiple bookings by same student on same day
+    const existingStudentDailyBooking = await Booking.findOne({
+      studentId: req.user._id,
+      date: { $gte: bookingDate, $lte: bookingDateEnd },
+      status: { $nin: ["rejected"] },
+    });
+
+    if (existingStudentDailyBooking) {
+      return res
+        .status(400)
+        .json({ message: "You can only book one slot per day" });
     }
 
     // Find batch
@@ -106,10 +145,10 @@ const bookSlot = async (req, res) => {
       return res.status(400).json({ message: "Batch has no assigned guide" });
     }
 
-    // Create booking (store date as string for consistency)
+    // Create booking (store normalized date-only timestamp)
     const booking = new Booking({
       batchId: batch._id,
-      date: dateStr,
+      date: bookingDate,
       slotNumber,
       studentId: req.user._id,
       guideId: batch.guideId._id,

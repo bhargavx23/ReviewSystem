@@ -9,6 +9,7 @@ const {
   getAllBookings,
   deleteBooking,
   getBatches,
+  updateBatch,
   getGuides,
   deleteBatch,
   approveBookingHOD,
@@ -26,6 +27,7 @@ router.post("/users", createUser);
 
 // Batches
 router.post("/batches", createBatch);
+router.put("/batches/:id", updateBatch);
 router.get("/guides", getGuides);
 router.post("/assign-guides", assignGuidesToBatches);
 

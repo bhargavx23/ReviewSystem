@@ -5,7 +5,8 @@ const helmet = require("helmet");
 const dotenv = require("dotenv");
 const path = require("path");
 
-dotenv.config();
+// Load backend .env explicitly using file path relative to this file.
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 const app = express();
 
@@ -39,9 +40,14 @@ app.get("/", (req, res) => {
   });
 });
 
+const { getMongoUri } = require("./utils/db");
+
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(getMongoUri(), {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 

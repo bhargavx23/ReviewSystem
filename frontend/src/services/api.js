@@ -43,6 +43,7 @@ export const authAPI = {
 export const adminAPI = {
   createUser: (data) => api.post("/admin/users", data),
   createBatch: (data) => api.post("/admin/batches", data),
+  updateBatch: (id, data) => api.put(`/admin/batches/${id}`, data),
   assignGuides: () => api.post("/admin/assign-guides"),
   getBatches: () => api.get("/admin/batches"),
   getGuides: () => api.get("/admin/guides"),
