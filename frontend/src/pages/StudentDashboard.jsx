@@ -69,7 +69,9 @@ const StudentDashboard = () => {
         remaining: batches.length - approved - pending,
       });
 
-      setHasApprovedBooking(myBookingsFromApi.some((b) => b.status === "approved"));
+      setHasApprovedBooking(
+        myBookingsFromApi.some((b) => b.status === "approved"),
+      );
     } catch (err) {
       console.error("Error fetching data:", err);
       if (err.response?.status !== 404) {
@@ -623,21 +625,34 @@ const StudentDashboard = () => {
                 </div>
               </div>
               <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-12 p-8 bg-slate-50/50 rounded-3xl">
-                {availableSlots.map((slot) => (
-                  <motion.button
-                    key={slot}
-                    className={`btn font-bold text-xl aspect-square shadow-lg hover:shadow-xl transition-all ${
-                      selectedSlot === slot
-                        ? "btn-primary bg-primary-600 hover:bg-primary-700 shadow-primary-500/25"
-                        : "btn-outline btn-primary hover:bg-primary-50"
-                    }`}
-                    onClick={() => setSelectedSlot(slot)}
-                    whileHover={{ scale: 1.15 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {slot}
-                  </motion.button>
-                ))}
+                {(() => {
+                  const total = parseInt(guideData.settings?.slotsPerDay, 10) || 10;
+                  const dayBookings = guideData.bookings
+                    .filter((b) => new Date(b.date).toISOString().split("T")[0] === selectedDateForSlot)
+                    .map((b) => b.slotNumber);
+                  const allSlots = Array.from({ length: total }, (_, i) => i + 1);
+                  return allSlots.map((slot) => {
+                    const isBooked = dayBookings.includes(slot);
+                    return (
+                      <motion.button
+                        key={slot}
+                        className={`font-bold text-xl aspect-square shadow-lg hover:shadow-xl transition-all rounded-2xl flex items-center justify-center ${
+                          isBooked
+                            ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                            : selectedSlot === slot
+                            ? "btn-primary bg-primary-600 hover:bg-primary-700 shadow-primary-500/25 text-white"
+                            : "btn-outline btn-primary hover:bg-primary-50"
+                        }`}
+                        onClick={() => !isBooked && setSelectedSlot(slot)}
+                        whileHover={{ scale: isBooked ? 1 : 1.08 }}
+                        whileTap={{ scale: isBooked ? 1 : 0.95 }}
+                        disabled={isBooked}
+                      >
+                        {slot}
+                      </motion.button>
+                    );
+                  });
+                })()}
               </div>
               <div className="flex flex-col sm:flex-row gap-6 pt-12 border-t-2 border-slate-200 bg-slate-50/50 p-8 rounded-b-3xl">
                 <button
