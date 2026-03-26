@@ -30,6 +30,7 @@ const StudentDashboard = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [myBookings, setMyBookings] = useState([]);
   const [hasApprovedBooking, setHasApprovedBooking] = useState(false);
+  const [hasExistingBooking, setHasExistingBooking] = useState(false);
   const [guideData, setGuideData] = useState({ bookings: [], settings: {} });
   const [selectedDateForSlot, setSelectedDateForSlot] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(1);
@@ -71,6 +72,9 @@ const StudentDashboard = () => {
 
       setHasApprovedBooking(
         myBookingsFromApi.some((b) => b.status === "approved"),
+      );
+      setHasExistingBooking(
+        myBookingsFromApi.some((b) => b.status && b.status !== "rejected"),
       );
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -369,11 +373,11 @@ const StudentDashboard = () => {
               Review Calendar • {myBatch.guideId?.name || "Your Guide"}
             </h3>
             <p className="text-xl text-slate-600 mb-8 opacity-90">
-              {hasApprovedBooking
-                ? "✅ Slot approved. One booking per student."
+              {hasExistingBooking
+                ? "You already have a booking (pending or approved). You cannot book another slot."
                 : "Click dates to book slots. Colors show availability."}
             </p>
-            {!hasApprovedBooking && (
+            {!hasExistingBooking && (
               <div className="mb-6">
                 <button
                   className="btn btn-primary opacity-70 cursor-not-allowed text-sm"
@@ -392,7 +396,7 @@ const StudentDashboard = () => {
                   settings={guideData.settings}
                   bookings={guideData.bookings}
                   onDateSelect={
-                    hasApprovedBooking ? undefined : handleDateSelect
+                    hasExistingBooking ? undefined : handleDateSelect
                   }
                   height="500px"
                   className="px-6 pb-12"
@@ -492,12 +496,21 @@ const StudentDashboard = () => {
                     <motion.button
                       className="w-full py-2.5 md:py-3 text-sm md:text-lg rounded-lg font-black text-white bg-primary-600 hover:bg-primary-700 shadow-md disabled:opacity-60"
                       onClick={handleBookSlot}
-                      disabled={!selectedDateForSlot}
-                      whileHover={!selectedDateForSlot ? {} : { scale: 1.02 }}
-                      whileTap={!selectedDateForSlot ? {} : { scale: 0.98 }}
+                      disabled={!selectedDateForSlot || hasExistingBooking}
+                      whileHover={
+                        !selectedDateForSlot || hasExistingBooking
+                          ? {}
+                          : { scale: 1.02 }
+                      }
+                      whileTap={
+                        !selectedDateForSlot || hasExistingBooking
+                          ? {}
+                          : { scale: 0.98 }
+                      }
                     >
-                      Confirm Booking{" "}
-                      {selectedDateForSlot ? `Slot ${selectedSlot}` : ""}
+                      {hasExistingBooking
+                        ? "Booking unavailable"
+                        : `Confirm Booking ${selectedDateForSlot ? `Slot ${selectedSlot}` : ""}`}
                     </motion.button>
                     <button
                       className="w-full py-2.5 md:py-3 text-sm md:text-lg rounded-lg font-bold border border-slate-200 bg-white/50 hover:bg-white/70 dark:bg-slate-800/50 dark:hover:bg-slate-800/70"

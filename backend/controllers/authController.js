@@ -32,8 +32,14 @@ const sendOtp = async (req, res) => {
       return res.status(400).json({ message: "Email or roll number required" });
     }
 
+    // Normalize input: trim and lowercase if it looks like an email
+    const rawInput = emailOrRollNo.trim();
+    const normalized = rawInput.includes("@")
+      ? rawInput.toLowerCase()
+      : rawInput;
+
     const user = await User.findOne({
-      $or: [{ email: emailOrRollNo }, { rollNo: emailOrRollNo }],
+      $or: [{ email: normalized }, { rollNo: normalized }],
     });
 
     if (!user || !user.isActive) {
@@ -76,8 +82,14 @@ const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email/rollNo and OTP required" });
     }
 
+    // Normalize input similar to sendOtp
+    const rawInput = emailOrRollNo.trim();
+    const normalized = rawInput.includes("@")
+      ? rawInput.toLowerCase()
+      : rawInput;
+
     const user = await User.findOne({
-      $or: [{ email: emailOrRollNo }, { rollNo: emailOrRollNo }],
+      $or: [{ email: normalized }, { rollNo: normalized }],
     });
 
     if (!user) {

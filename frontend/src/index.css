@@ -169,10 +169,10 @@ body {
 
 /* Subtle glow helpers used across interactive elements */
 .shadow-glow-primary {
-  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.18);
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.18);
 }
 .shadow-glow-accent {
-  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.18);
+  box-shadow: 0 10px 30px rgba(20, 184, 166, 0.18);
 }
 
 /* Ensure readable text and input contrast inside dialogs/modals (light + dark theme)
