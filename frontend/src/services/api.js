@@ -48,9 +48,8 @@ export const adminAPI = {
   getBatches: () => api.get("/admin/batches"),
   getGuides: () => api.get("/admin/guides"),
   deleteBatch: (id) => api.delete(`/admin/batches/${id}`),
-  approveBookingHOD: (id) => api.put(`/admin/bookings/${id}/approve-hod`),
-  rejectBookingHOD: (id) => api.put(`/admin/bookings/${id}/reject-hod`),
   getReports: (format = "json") => api.get(`/admin/reports?format=${format}`),
+
   getSettings: () => api.get("/admin/settings"),
   updateSettings: (data) => api.put("/admin/settings", data),
   getBookings: () => api.get("/admin/bookings"),
@@ -60,6 +59,7 @@ export const adminAPI = {
 export const guideAPI = {
   getBatches: () => api.get("/guide/batches"),
   getPending: () => api.get("/guide/pending-bookings"),
+  getBatch: (id) => api.get(`/guide/batches/${id}`),
   approveBooking: (id) => api.put(`/guide/bookings/${id}/approve`),
   rejectBooking: (id) => api.put(`/guide/bookings/${id}/reject`),
 };

@@ -10,9 +10,17 @@ const Login = ({ setUser }) => {
   const [emailOrRollNo, setEmailOrRollNo] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
   const navigate = useNavigate();
 
   const sendOtpHandler = async () => {
+    const now = Date.now();
+    if (cooldownUntil > now) {
+      const remaining = Math.ceil((cooldownUntil - now) / 1000);
+      showToast(`⏳ Wait ${remaining}s before resending`, "warning");
+      return;
+    }
+
     if (!emailOrRollNo.trim()) {
       showToast("Please enter email or roll number", "error");
       return;
@@ -24,9 +32,14 @@ const Login = ({ setUser }) => {
     try {
       await authAPI.sendOtp({ emailOrRollNo });
       showToast("✅ OTP sent to your email!", "success");
+      setCooldownUntil(Date.now() + 60 * 1000); // 60s cooldown
       setStep(2);
     } catch (err) {
-      showToast(err.response?.data?.message || "Error sending OTP", "error");
+      if (err.response?.status === 429) {
+        showToast("Too many requests. Wait 15 minutes.", "error");
+      } else {
+        showToast(err.response?.data?.message || "Error sending OTP", "error");
+      }
     } finally {
       setLoading(false);
       showToast("dismiss");
@@ -127,7 +140,11 @@ const Login = ({ setUser }) => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={loading || !emailOrRollNo.trim()}
+                  disabled={
+                    loading ||
+                    !emailOrRollNo.trim() ||
+                    cooldownUntil > Date.now()
+                  }
                   onClick={sendOtpHandler}
                   className="group relative w-full flex items-center justify-center gap-3 py-5 sm:py-6 px-6 sm:px-8 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 hover:from-primary-600 hover:via-primary-700 hover:to-primary-800 text-white font-bold text-lg sm:text-xl rounded-2xl shadow-2xl hover:shadow-glow-primary active:shadow-xl active:translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
@@ -136,6 +153,13 @@ const Login = ({ setUser }) => {
                     <>
                       <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
                       <span className="tracking-wide">Sending OTP...</span>
+                    </>
+                  ) : cooldownUntil > Date.now() ? (
+                    <>
+                      <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+                      <span className="tracking-wide">
+                        Wait {Math.ceil((cooldownUntil - Date.now()) / 1000)}s
+                      </span>
                     </>
                   ) : (
                     <>
@@ -219,6 +243,24 @@ const Login = ({ setUser }) => {
                       ← Back to Email
                     </span>
                   </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={loading || cooldownUntil > Date.now()}
+                    onClick={sendOtpHandler}
+                    className="group relative w-full py-3 px-6 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 font-semibold text-sm rounded-xl shadow-md hover:shadow-lg active:translate-y-px transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {cooldownUntil > Date.now() ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                    {cooldownUntil > Date.now()
+                      ? `Resend (${Math.ceil((cooldownUntil - Date.now()) / 1000)}s)`
+                      : "Resend OTP"}
+                  </motion.button>
+
                   <motion.button
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
