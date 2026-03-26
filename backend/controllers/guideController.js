@@ -6,9 +6,19 @@ const { sendBookingEmail } = require("../utils/email");
 // Get assigned batches for guide
 const getAssignedBatches = async (req, res) => {
   try {
-    const batches = await Batch.find({ guideId: req.user._id }).sort({
-      batchName: 1,
+    // fetch batches and dedupe by _id to avoid duplicates
+    const batchesRaw = await Batch.find({ guideId: req.user._id })
+      .sort({ batchName: 1 })
+      .lean();
+
+    const seen = new Set();
+    const batches = batchesRaw.filter((b) => {
+      const id = String(b._id);
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
     });
+
     res.json(batches);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -23,6 +33,7 @@ const getPendingBookings = async (req, res) => {
       status: "pending",
     })
       .populate("batchId", "batchName projectTitle teamLeaderName")
+      .populate("studentId", "name email")
       .sort({ date: 1 });
     res.json(bookings);
   } catch (err) {
@@ -39,6 +50,9 @@ const approveBooking = async (req, res) => {
       { status: "approved" },
       { new: true },
     ).populate("batchId", "teamLeaderEmail batchName date slotNumber");
+
+    // include student info for response and notifications
+    await booking.populate("studentId", "name email");
 
     if (!booking) {
       return res
@@ -69,6 +83,9 @@ const rejectBooking = async (req, res) => {
       { status: "rejected" },
       { new: true },
     ).populate("batchId", "teamLeaderEmail");
+
+    // include student info
+    await booking?.populate("studentId", "name email");
 
     if (booking) {
       await sendBookingEmail(booking.batchId.teamLeaderEmail, "rejected", {});

@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+const colors = require("tailwindcss/colors");
+
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   darkMode: "class",
@@ -8,6 +10,7 @@ module.exports = {
         sans: ["Poppins", "Inter", "ui-sans-serif", "system-ui"],
       },
       colors: {
+        // Keep slate for neutrals, reuse Tailwind's defaults where sensible
         slate: {
           50: "#f8fafc",
           100: "#f1f5f9",
@@ -32,30 +35,9 @@ module.exports = {
           800: "#3730a3",
           900: "#312e81",
         },
-        primary: {
-          50: "#eef2ff",
-          100: "#e0e7ff",
-          200: "#c7d2fe",
-          300: "#a5b4fc",
-          400: "#818cf8",
-          500: "#6366f1",
-          600: "#4f46e5",
-          700: "#4338ca",
-          800: "#3730a3",
-          900: "#312e81",
-        },
-        accent: {
-          50: "#ecfdf5",
-          100: "#d1fae5",
-          200: "#a7f3d0",
-          300: "#6ee7b7",
-          400: "#34d399",
-          500: "#10b981",
-          600: "#059669",
-          700: "#047857",
-          800: "#065f46",
-          900: "#064e3b",
-        },
+        // Modernized primary and accent using Tailwind's curated palettes
+        primary: colors.violet,
+        accent: colors.teal,
       },
       animation: {
         "fade-in-up": "fadeInUp 0.6s ease-out",
@@ -65,8 +47,8 @@ module.exports = {
       boxShadow: {
         modern:
           "0 20px 25px -5px rgba(0, 0,0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-        "glow-indigo":
-          "0 0 0 1px rgba(79, 70, 229, 0.1), 0 20px 25px -5px rgba(79, 70, 229, 0.1)",
+        "glow-primary":
+          "0 0 0 1px rgba(124, 58, 237, 0.08), 0 20px 25px -5px rgba(124, 58, 237, 0.08)",
       },
       spacing: {
         18: "4.5rem",

@@ -37,7 +37,12 @@ const GuideDashboard = () => {
         guideAPI.getBatches(),
         guideAPI.getPending(),
       ]);
-      setBatches(batchesRes.data || []);
+      // dedupe batches client-side as a safeguard
+      const rawBatches = batchesRes.data || [];
+      const uniqueBatches = Array.from(
+        new Map(rawBatches.map((b) => [b._id, b])).values(),
+      );
+      setBatches(uniqueBatches);
       setPendingBookings(pendingRes.data || []);
 
       const totalBatches = batchesRes.data?.length || 0;
@@ -271,79 +276,82 @@ const GuideDashboard = () => {
                 </p>
               </div>
             ) : (
-              <div className="overflow-auto">
-                <table className="w-full text-left min-w-[640px]">
-                  <thead className="text-slate-600 text-sm border-b border-slate-100">
-                    <tr>
-                      <th className="p-3">Student</th>
-                      <th className="p-3">Batch</th>
-                      <th className="p-3">Date</th>
-                      <th className="p-3">Slot</th>
-                      <th className="p-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBookings.map((booking) => (
-                      <tr key={booking._id} className="even:bg-slate-50">
-                        <td className="p-3 align-top font-semibold">
-                          {booking.studentId?.name || "N/A"}
-                        </td>
-                        <td className="p-3 align-top">
-                          <span className="inline-block px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-bold">
-                            {booking.batchId?.batchName || "N/A"}
-                          </span>
-                        </td>
-                        <td className="p-3 align-top font-mono text-sm">
+              <div className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {filteredBookings.map((booking) => (
+                    <article
+                      key={booking._id}
+                      className="bg-white rounded-2xl shadow-sm p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center text-primary-700 font-bold">
+                          {booking.studentId?.name?.split(" ")[0]?.[0] || "S"}
+                        </div>
+                        <div>
+                          <div className="text-sm text-slate-500">Student</div>
+                          <div className="font-semibold text-slate-900">
+                            {booking.studentId?.name || "N/A"}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500">
+                            <span className="inline-block px-2 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-bold">
+                              {booking.batchId?.batchName || "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 text-sm text-slate-600">
+                        <div className="text-xs text-slate-400">Date</div>
+                        <div className="font-mono text-base text-slate-900">
                           {new Date(booking.date).toLocaleDateString("en-IN", {
                             weekday: "short",
                             year: "numeric",
                             month: "short",
                             day: "numeric",
                           })}
-                        </td>
-                        <td className="p-3 align-top">
-                          <span className="px-3 py-2 bg-slate-100 rounded-md font-bold">
+                        </div>
+                        <div className="mt-1 text-sm">
+                          <span className="inline-block px-3 py-1 bg-slate-100 rounded-md font-bold">
                             Slot {booking.slotNumber}
                           </span>
-                        </td>
-                        <td className="p-3 align-top text-center">
-                          <div className="flex gap-2 justify-center">
-                            <motion.button
-                              onClick={() => handleApprove(booking._id)}
-                              disabled={actionLoading === booking._id}
-                              aria-label={`Approve booking for ${booking.studentId?.name || "student"}`}
-                              className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-md text-sm font-semibold disabled:opacity-60"
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              {actionLoading === booking._id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
-                              <span className="hidden sm:inline">Approve</span>
-                            </motion.button>
-                            <motion.button
-                              onClick={() => handleReject(booking._id)}
-                              disabled={actionLoading === booking._id}
-                              aria-label={`Reject booking for ${booking.studentId?.name || "student"}`}
-                              className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-md text-sm font-semibold disabled:opacity-60"
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              {actionLoading === booking._id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <XCircle className="w-4 h-4" />
-                              )}
-                              <span className="hidden sm:inline">Reject</span>
-                            </motion.button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          onClick={() => handleApprove(booking._id)}
+                          disabled={actionLoading === booking._id}
+                          aria-label={`Approve booking for ${booking.studentId?.name || "student"}`}
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-md text-sm font-semibold disabled:opacity-60"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {actionLoading === booking._id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
+                          <span className="hidden sm:inline">Approve</span>
+                        </motion.button>
+                        <motion.button
+                          onClick={() => handleReject(booking._id)}
+                          disabled={actionLoading === booking._id}
+                          aria-label={`Reject booking for ${booking.studentId?.name || "student"}`}
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-md text-sm font-semibold disabled:opacity-60"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {actionLoading === booking._id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <XCircle className="w-4 h-4" />
+                          )}
+                          <span className="hidden sm:inline">Reject</span>
+                        </motion.button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </div>
             )}
           </section>

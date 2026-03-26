@@ -98,28 +98,17 @@ const bookSlot = async (req, res) => {
       return res.status(400).json({ message: "Slot already taken" });
     }
 
-    // Check if student already has approved booking (NEW)
-    const existingApproved = await Booking.findOne({
+    // Prevent multiple bookings by the same student (pending or approved)
+    const existingStudentBooking = await Booking.findOne({
       studentId: req.user._id,
-      status: "approved",
-    });
-    if (existingApproved) {
-      return res.status(400).json({
-        message: "Cannot book another slot. Your previous booking is approved.",
-      });
-    }
-
-    // Prevent multiple bookings by same student on same day
-    const existingStudentDailyBooking = await Booking.findOne({
-      studentId: req.user._id,
-      date: { $gte: bookingDate, $lte: bookingDateEnd },
       status: { $nin: ["rejected"] },
     });
 
-    if (existingStudentDailyBooking) {
-      return res
-        .status(400)
-        .json({ message: "You can only book one slot per day" });
+    if (existingStudentBooking) {
+      return res.status(400).json({
+        message:
+          "You already have a booking (pending or approved). Cannot book another slot.",
+      });
     }
 
     // Find batch
