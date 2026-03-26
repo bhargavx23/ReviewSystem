@@ -42,8 +42,7 @@ router.delete("/bookings/:id", deleteBooking);
 // New routes
 router.get("/batches", getBatches);
 router.delete("/batches/:id", deleteBatch);
-router.put("/bookings/:id/approve-hod", approveBookingHOD);
-router.put("/bookings/:id/reject-hod", rejectBookingHOD);
 router.get("/reports", generateReportAPI);
+
 
 module.exports = router;

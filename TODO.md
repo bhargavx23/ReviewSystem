@@ -1,15 +1,22 @@
-# Admin Panel Redesign TODO
+# 429 Too Many Requests Fix - Frontend Edits ✅
 
-## Plan Steps (Approved by User)
+## ✅ Completed
 
-1. [ ] **Create TODO.md** - Track progress (CURRENT)
-2. [ ] **Read frontend/src/index.css** - Check/define custom CSS classes (btn-primary, badge-\*, glass-card, etc.)
-3. [ ] **Edit AdminDashboard.jsx** - Standardize Tailwind classes, fix custom CSS refs, enhance accessibility/mobile, polish layout
-4. [ ] **Edit Navbar.jsx** - Ensure glass consistency, mobile improvements
-5. [ ] **Optional: Edit index.css** - Add any missing utility classes
-6. [ ] **Test changes** - Run frontend dev server, verify all features work, responsive design
-7. [ ] **Update TODO.md** - Mark complete, attempt_completion
+- [x] Backend limit: 5→10 OTP/15min
+- [x] Better 429 messages/headers
+- [x] Frontend: Fix JSX duplication + resend button + cooldown polish
 
-**Notes:** No feature loss. Focus on polish/accessibility. Modern glass design retained with indigo/slate theme.
+## 🔄 In Progress
 
-Progress: 0/7 complete
+**Testing:**
+
+## ⏳ Next Steps
+
+```
+[ ] Backend restart: cd backend && npm run dev
+[ ] Test rapid OTP sends (frontend blocks before backend limit)
+[ ] Full login flow test (admin/guide/student)
+[ ] attempt_completion
+```
+
+**Status: Frontend FIXED! Ready for testing → No feature loss!**

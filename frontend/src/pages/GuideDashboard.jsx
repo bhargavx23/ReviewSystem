@@ -1,21 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  Users,
   Users2,
   CheckCircle,
   XCircle,
   Loader2,
   Clock,
+  CalendarDays,
+  Activity,
+  Search,
 } from "lucide-react";
 import { showToast } from "../components/Toaster";
 import { guideAPI } from "../services/api";
+import BatchGrid from "../components/BatchGrid.jsx";
+import BatchDetailsModal from "../components/BatchDetailsModal.jsx";
+import { Skeleton } from "../components/Skeleton.jsx";
 
 const GuideDashboard = () => {
   const [batches, setBatches] = useState([]);
   const [pendingBookings, setPendingBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [stats, setStats] = useState({});
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -30,6 +39,14 @@ const GuideDashboard = () => {
       ]);
       setBatches(batchesRes.data || []);
       setPendingBookings(pendingRes.data || []);
+
+      const totalBatches = batchesRes.data?.length || 0;
+      const totalPending = pendingRes.data?.length || 0;
+      setStats({
+        batches: totalBatches,
+        pending: totalPending,
+        approvedToday: 0,
+      });
     } catch (err) {
       console.error("Error fetching data:", err);
       showToast("Failed to load dashboard", "error");
@@ -74,208 +91,252 @@ const GuideDashboard = () => {
     }
   };
 
+  const filteredBookings = pendingBookings.filter(
+    (booking) =>
+      booking.studentId?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      booking.batchId?.batchName
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()),
+  );
+
+  const StatsCard = ({
+    icon: Icon,
+    title,
+    value,
+    description,
+    color = "slate",
+  }) => (
+    <motion.article
+      role="region"
+      aria-label={title}
+      whileHover={{ y: -4 }}
+      className={`glass-card p-5 rounded-2xl shadow-md flex flex-col justify-between`}
+    >
+      <div className="flex items-center gap-4 mb-3">
+        <div className="p-3 rounded-lg bg-white/60 shadow-sm">
+          <Icon className="w-6 h-6 text-primary-600" />
+        </div>
+        <div>
+          <div className="text-2xl font-extrabold text-slate-900">{value}</div>
+          <div className="text-xs uppercase text-slate-500 tracking-wide">
+            {title}
+          </div>
+        </div>
+      </div>
+      <p className="text-sm text-slate-600">{description}</p>
+    </motion.article>
+  );
+
+  const BookingRowSkeleton = () => (
+    <div className="h-16 bg-slate-200/40 rounded-lg animate-pulse" />
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center space-y-4 p-12">
-          <Loader2 className="w-16 h-16 animate-spin text-primary-600 shadow-lg" />
-          <p className="text-2xl font-bold text-slate-700">
-            Loading dashboard...
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <Skeleton className="h-32 w-full rounded-3xl" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-2xl" />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Skeleton className="h-96 rounded-3xl" />
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <BookingRowSkeleton key={i} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-12 py-12"
-    >
-      {/* Hero Header */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-      >
-        <div className="glass-card p-12 lg:p-20 rounded-3xl shadow-2xl mb-16">
-          <h1 className="text-5xl lg:text-6xl font-black text-slate-900 mb-8 leading-tight">
-            Guide Dashboard
-          </h1>
-          <p className="text-2xl text-slate-600 max-w-4xl leading-relaxed opacity-90">
-            Manage student review requests and assigned project batches with
-            real-time updates
-          </p>
-        </div>
-      </motion.section>
-
-      {/* Assigned Batches */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="glass-card rounded-3xl p-12 shadow-2xl">
-          <h3 className="text-4xl font-black text-slate-900 mb-12 flex items-center gap-6">
-            <Users2 className="w-20 h-20 text-primary-600 bg-primary-100 p-5 rounded-3xl shadow-2xl" />
-            Assigned Batches ({batches.length})
-          </h3>
-
-          {batches.length === 0 ? (
-            <div className="text-center py-32">
-              <Users className="w-32 h-32 text-slate-300 mx-auto mb-12 opacity-50 shadow-2xl" />
-              <h4 className="text-4xl font-black text-slate-500 mb-8">
-                No Batches Assigned
-              </h4>
-              <p className="text-2xl text-slate-500 max-w-2xl mx-auto leading-relaxed opacity-90">
-                Admin will assign project batches to you. Pending bookings will
-                appear here automatically.
-              </p>
+    <main className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
+              Guide Dashboard
+            </h1>
+            <p className="text-sm text-slate-600 mt-1">
+              Manage review requests and assigned batches
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:block">
+              <label htmlFor="search" className="sr-only">
+                Search bookings
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  id="search"
+                  type="search"
+                  aria-label="Search students or batches"
+                  placeholder="Search students or batches"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 rounded-lg border border-slate-200 bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-10">
-              {batches.map((batch, index) => (
-                <motion.div
-                  key={batch._id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="card-modern glass-card p-10 lg:p-12 rounded-3xl hover:shadow-2xl border-l-8 border-primary-500/70 cursor-pointer group shadow-xl"
-                  whileHover={{ y: -12, scale: 1.03 }}
-                >
-                  <div className="mb-8">
-                    <h4 className="text-3xl lg:text-4xl font-black text-slate-900 mb-6 line-clamp-1">
-                      {batch.batchName}
-                    </h4>
-                    <p className="text-xl text-slate-600 leading-relaxed line-clamp-2 mb-8">
-                      {batch.projectTitle}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-6 p-8 bg-white/60 dark:bg-slate-800/60 rounded-3xl shadow-inner mb-10 backdrop-blur-md group-hover:bg-white/80 transition-all">
-                    <div className="w-20 h-20 bg-gradient-to-br from-accent-400 to-accent-500 rounded-3xl flex items-center justify-center shadow-2xl group-hover:scale-110 transition-all">
-                      <Users className="w-10 h-10 text-white shadow-lg" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-700 text-2xl mb-3">
-                        Team Leader
-                      </p>
-                      <p className="text-3xl font-black text-slate-900">
-                        {batch.teamLeaderName}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-2xl text-slate-500 group-hover:text-primary-600 transition-all font-semibold opacity-0 group-hover:opacity-100">
-                    Manage Students →
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-      </motion.section>
+          </div>
+        </header>
 
-      {/* Pending Bookings */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="glass-card rounded-3xl shadow-2xl overflow-hidden"
-      >
-        <div className="p-12 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-primary-50">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <h3 className="text-4xl font-black text-slate-900 flex items-center gap-6">
-              <Clock className="w-20 h-20 text-amber-600 bg-amber-100 p-5 rounded-3xl shadow-2xl" />
-              Pending Requests ({pendingBookings.length})
-            </h3>
-            {pendingBookings.length === 0 ? (
-              <motion.div
-                className="badge badge-success text-2xl px-12 py-6 font-black shadow-2xl inline-flex items-center gap-3"
-                whileHover={{ scale: 1.05 }}
-              >
-                <CheckCircle className="w-8 h-8" />
-                All Requests Up to Date! 🎉
-              </motion.div>
+        <section
+          aria-labelledby="stats"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          <StatsCard
+            icon={Users2}
+            title="Assigned Batches"
+            value={stats.batches || 0}
+            description="Batches assigned to you"
+          />
+          <StatsCard
+            icon={Clock}
+            title="Pending Reviews"
+            value={stats.pending || 0}
+            description="Bookings awaiting approval"
+          />
+          <StatsCard
+            icon={CheckCircle}
+            title="Approved Today"
+            value={stats.approvedToday || 0}
+            description="Approvals in last 24hrs"
+          />
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <section
+            aria-labelledby="batches"
+            className="bg-white rounded-2xl shadow-sm p-5"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 id="batches" className="text-xl font-bold">
+                Assigned Batches ({batches.length})
+              </h2>
+            </div>
+            {batches.length === 0 ? (
+              <div className="text-center py-12 text-slate-500">
+                <Users2 className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                <p>No batches assigned yet. Admin assigns batches to guides.</p>
+              </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="table table-xl w-full">
-                  <thead>
+              <BatchGrid
+                batches={batches}
+                onBatchClick={(batch) => {
+                  setSelectedBatch(batch._id);
+                  setShowModal(true);
+                }}
+                className="grid-cols-1 lg:grid-cols-2"
+              />
+            )}
+          </section>
+
+          <section
+            aria-labelledby="pending"
+            className="bg-white rounded-2xl shadow-sm overflow-hidden"
+          >
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <h2 id="pending" className="text-xl font-bold">
+                Pending Requests ({filteredBookings.length})
+              </h2>
+              <div className="sm:hidden">
+                <label htmlFor="mobile-search" className="sr-only">
+                  Search
+                </label>
+                <input
+                  id="mobile-search"
+                  type="search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search"
+                  className="pl-3 pr-3 py-2 rounded-lg border border-slate-200 text-sm"
+                />
+              </div>
+            </div>
+
+            {filteredBookings.length === 0 ? (
+              <div className="text-center p-8 text-slate-500">
+                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-400" />
+                <p className="font-semibold">
+                  All caught up — no pending requests.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-auto">
+                <table className="w-full text-left min-w-[640px]">
+                  <thead className="text-slate-600 text-sm border-b border-slate-100">
                     <tr>
-                      <th>Student</th>
-                      <th>Batch</th>
-                      <th>Date</th>
-                      <th>Slot</th>
-                      <th>Actions</th>
+                      <th className="p-3">Student</th>
+                      <th className="p-3">Batch</th>
+                      <th className="p-3">Date</th>
+                      <th className="p-3">Slot</th>
+                      <th className="p-3 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingBookings.map((booking) => (
-                      <tr key={booking._id} className="hover group">
-                        <th className="font-black text-2xl text-slate-900">
+                    {filteredBookings.map((booking) => (
+                      <tr key={booking._id} className="even:bg-slate-50">
+                        <td className="p-3 align-top font-semibold">
                           {booking.studentId?.name || "N/A"}
-                        </th>
-                        <td>
-                          <span className="badge badge-primary font-bold px-8 py-4 text-xl shadow-md rounded-2xl">
+                        </td>
+                        <td className="p-3 align-top">
+                          <span className="inline-block px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-bold">
                             {booking.batchId?.batchName || "N/A"}
                           </span>
                         </td>
-                        <td>
-                          <div className="font-mono text-2xl font-black text-primary-600 shadow-md px-6 py-4 bg-primary-50 rounded-2xl inline-block">
-                            {new Date(booking.date).toLocaleDateString(
-                              "en-IN",
-                              {
-                                weekday: "long",
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              },
-                            )}
-                          </div>
+                        <td className="p-3 align-top font-mono text-sm">
+                          {new Date(booking.date).toLocaleDateString("en-IN", {
+                            weekday: "short",
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
                         </td>
-                        <td>
-                          <div className="badge badge-lg badge-primary font-black px-8 py-4 text-2xl shadow-2xl rounded-3xl">
+                        <td className="p-3 align-top">
+                          <span className="px-3 py-2 bg-slate-100 rounded-md font-bold">
                             Slot {booking.slotNumber}
-                          </div>
+                          </span>
                         </td>
-                        <td>
-                          <div className="flex flex-col lg:flex-row gap-4 pt-8">
+                        <td className="p-3 align-top text-center">
+                          <div className="flex gap-2 justify-center">
                             <motion.button
                               onClick={() => handleApprove(booking._id)}
                               disabled={actionLoading === booking._id}
-                              className="btn btn-success gap-4 text-xl py-6 px-12 shadow-2xl font-black flex-1 lg:flex-none hover:shadow-accent-500/25"
-                              whileHover={{ scale: 1.05 }}
+                              aria-label={`Approve booking for ${booking.studentId?.name || "student"}`}
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-md text-sm font-semibold disabled:opacity-60"
+                              whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                             >
                               {actionLoading === booking._id ? (
-                                <>
-                                  <Loader2 className="w-7 h-7 animate-spin" />
-                                  Approving...
-                                </>
+                                <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                                <>
-                                  <CheckCircle className="w-7 h-7" />
-                                  Approve
-                                </>
+                                <CheckCircle className="w-4 h-4" />
                               )}
+                              <span className="hidden sm:inline">Approve</span>
                             </motion.button>
                             <motion.button
                               onClick={() => handleReject(booking._id)}
                               disabled={actionLoading === booking._id}
-                              className="btn btn-error gap-4 text-xl py-6 px-12 shadow-2xl font-black flex-1 lg:flex-none hover:shadow-red-500/25"
-                              whileHover={{ scale: 1.05 }}
+                              aria-label={`Reject booking for ${booking.studentId?.name || "student"}`}
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-md text-sm font-semibold disabled:opacity-60"
+                              whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                             >
                               {actionLoading === booking._id ? (
-                                <>
-                                  <Loader2 className="w-7 h-7 animate-spin" />
-                                  Rejecting...
-                                </>
+                                <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                                <>
-                                  <XCircle className="w-7 h-7" />
-                                  Reject
-                                </>
+                                <XCircle className="w-4 h-4" />
                               )}
+                              <span className="hidden sm:inline">Reject</span>
                             </motion.button>
                           </div>
                         </td>
@@ -285,10 +346,33 @@ const GuideDashboard = () => {
                 </table>
               </div>
             )}
-          </div>
+          </section>
         </div>
-      </motion.section>
-    </motion.div>
+
+        <section
+          aria-labelledby="activity"
+          className="bg-white rounded-2xl shadow-sm p-5"
+        >
+          <h3
+            id="activity"
+            className="text-lg font-bold mb-4 flex items-center gap-3"
+          >
+            <Activity className="w-5 h-5 text-indigo-600" />
+            Recent Activity
+          </h3>
+          <div className="text-sm text-slate-500 py-8 text-center">
+            <CalendarDays className="w-12 h-12 mx-auto mb-2 text-slate-300" />
+            Activity feed coming soon...
+          </div>
+        </section>
+
+        <BatchDetailsModal
+          batchId={selectedBatch}
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+        />
+      </div>
+    </main>
   );
 };
 

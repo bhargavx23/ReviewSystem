@@ -76,7 +76,11 @@ export function exportPDF(filename, title, headers = [], rows = []) {
       const { jsPDF } = await import("jspdf");
       // html2canvas is used internally by jsPDF.html, but ensure it's available
       await import("html2canvas");
-      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
       await doc.html(container, {
         callback: (pdf) => {
           try {

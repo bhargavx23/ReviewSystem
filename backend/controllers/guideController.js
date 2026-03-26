@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Batch = require("../models/Batch");
 const { sendBookingEmail } = require("../utils/email");
@@ -5,9 +6,9 @@ const { sendBookingEmail } = require("../utils/email");
 // Get assigned batches for guide
 const getAssignedBatches = async (req, res) => {
   try {
-    const batches = await Batch.find({ guideId: req.user._id })
-      .populate("teamLeaderRollNo", "User")
-      .sort({ batchName: 1 });
+    const batches = await Batch.find({ guideId: req.user._id }).sort({
+      batchName: 1,
+    });
     res.json(batches);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -35,7 +36,7 @@ const approveBooking = async (req, res) => {
     const { id } = req.params;
     const booking = await Booking.findOneAndUpdate(
       { _id: id, guideId: req.user._id, status: "pending" },
-      { status: "guide-approved" },
+      { status: "approved" },
       { new: true },
     ).populate("batchId", "teamLeaderEmail batchName date slotNumber");
 
@@ -79,9 +80,63 @@ const rejectBooking = async (req, res) => {
   }
 };
 
+// Get specific batch details for guide (with bookings stats)
+const getBatchDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // validate id to avoid cast errors in aggregation
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid batch id" });
+    }
+    const batch = await Batch.findOne({
+      _id: id,
+      guideId: req.user._id,
+    }).populate("guideId", "name email");
+
+    if (!batch) {
+      return res
+        .status(404)
+        .json({ message: "Batch not found or not assigned to you" });
+    }
+
+    // Get batch bookings count by status
+    const bookingsCount = await Booking.aggregate([
+      { $match: { batchId: new mongoose.Types.ObjectId(id) } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const counts = {
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      total: 0,
+    };
+
+    bookingsCount.forEach(({ _id: status, count }) => {
+      counts[status] = count || 0;
+    });
+    // total bookings is sum of all statuses
+    counts.total =
+      (counts.pending || 0) + (counts.approved || 0) + (counts.rejected || 0);
+
+    res.json({
+      ...batch.toObject(),
+      bookingsCount: counts,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getAssignedBatches,
   getPendingBookings,
   approveBooking,
   rejectBooking,
+  getBatchDetails,
 };

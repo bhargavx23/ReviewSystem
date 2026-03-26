@@ -5,11 +5,16 @@ const User = require("../models/User");
 
 const rateLimit = require("express-rate-limit");
 
-// Rate limit for OTP (5 per 15min)
+// Rate limit for OTP (10 per 15min)
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  message: "Too many OTP requests",
+  max: 10,
+  message: {
+    message: "Too many OTP requests from this IP. Try again in 15 minutes.",
+    retryAfter: 900, // seconds
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Generate 6 digit OTP
@@ -20,6 +25,7 @@ const generateOtp = () => {
 // Send OTP
 const sendOtp = async (req, res) => {
   try {
+    console.log("[/api/auth/send-otp] request body:", req.body);
     const { emailOrRollNo } = req.body;
 
     if (!emailOrRollNo || emailOrRollNo.trim() === "") {
@@ -37,15 +43,27 @@ const sendOtp = async (req, res) => {
     const otp = generateOtp();
     user.otp = otp;
     user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 min
-    await user.save();
+    try {
+      await user.save();
+    } catch (saveErr) {
+      console.error("Error saving OTP to user:", saveErr);
+      return res.status(500).json({ message: "Failed to set OTP on user" });
+    }
 
     console.log(`📧 Sending OTP to ${user.email}`);
-    await sendOtpEmail(user.email, otp);
+    try {
+      await sendOtpEmail(user.email, otp);
+    } catch (emailErr) {
+      console.error("Error in sendOtpEmail:", emailErr);
+      // don't fail the whole flow for email errors; still return success
+    }
 
-    res.json({ message: "OTP sent successfully to your email" });
+    return res.json({ message: "OTP sent successfully to your email" });
   } catch (err) {
-    console.error("Error sending OTP:", err);
-    res.status(500).json({ message: err.message });
+    console.error("Error sending OTP:", err && err.stack ? err.stack : err);
+    res
+      .status(500)
+      .json({ message: "Internal server error while sending OTP" });
   }
 };
 
@@ -68,7 +86,9 @@ const verifyOtp = async (req, res) => {
 
     // Check if OTP is set
     if (!user.otp) {
-      return res.status(400).json({ message: "No OTP found. Please request a new one" });
+      return res
+        .status(400)
+        .json({ message: "No OTP found. Please request a new one" });
     }
 
     // Check if OTP has expired
@@ -76,7 +96,9 @@ const verifyOtp = async (req, res) => {
       user.otp = undefined;
       user.otpExpires = undefined;
       await user.save();
-      return res.status(400).json({ message: "OTP expired. Please request a new one" });
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please request a new one" });
     }
 
     // Compare OTP

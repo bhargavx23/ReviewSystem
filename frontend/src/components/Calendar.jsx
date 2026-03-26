@@ -3,7 +3,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { Calendar as CalendarIcon, CheckCircle2, Clock, X } from "lucide-react";
+import { Calendar as CalendarIcon, CheckCircle, Clock, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 const BookingCalendar = ({
@@ -29,7 +29,7 @@ const BookingCalendar = ({
   const getEventIcon = (status) => {
     switch (status) {
       case "approved":
-        return CheckCircle2;
+        return CheckCircle;
       case "pending":
         return Clock;
       case "rejected":
@@ -50,7 +50,11 @@ const BookingCalendar = ({
     const totalSlots = settings?.slotsPerDay || 10;
 
     return (
-      <div className="flex flex-col gap-1.5 p-1.5 text-sm font-semibold min-w-[75px] h-[50px] justify-center items-center">
+      <div
+        role="button"
+        tabIndex={0}
+        className="flex flex-col gap-1.5 p-1.5 text-sm font-semibold min-w-[75px] h-[50px] justify-center items-center"
+      >
         <div className="flex items-center gap-1.5">
           <Icon
             className="w-4 h-4 flex-shrink-0"
@@ -67,6 +71,11 @@ const BookingCalendar = ({
 
   const handleDateClick = (arg) => {
     onDateSelect?.(arg.dateStr);
+  };
+
+  const handleEventClick = (arg) => {
+    // Allow clicking on an event (slot box) to open booking modal for that date
+    onDateSelect?.(arg.event.startStr);
   };
 
   return (
@@ -102,6 +111,7 @@ const BookingCalendar = ({
           }))}
           eventContent={renderEventContent}
           dateClick={handleDateClick}
+          eventClick={handleEventClick}
           headerToolbar={{
             left: "prev,next today",
             center: "title",
@@ -140,6 +150,7 @@ const BookingCalendar = ({
               "border-white/20",
               "hover:scale-[1.05]",
               "transition-all",
+              "cursor-pointer",
             );
           }}
         />

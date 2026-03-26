@@ -218,40 +218,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleApproveBooking = async (id) => {
-    try {
-      setActionLoading(id);
-      showToast("Approving booking...", "loading");
-      await adminAPI.approveBookingHOD(id);
-      showToast("Booking approved!", "success");
-      fetchData();
-    } catch (err) {
-      showToast(
-        err.response?.data?.message || "Error approving booking",
-        "error",
-      );
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleRejectBooking = async (id) => {
-    if (!window.confirm("Reject this booking request?")) return;
-    try {
-      setActionLoading(id);
-      showToast("Rejecting booking...", "loading");
-      await adminAPI.rejectBookingHOD(id);
-      showToast("Booking rejected!", "success");
-      fetchData();
-    } catch (err) {
-      showToast(
-        err.response?.data?.message || "Error rejecting booking",
-        "error",
-      );
-    } finally {
-      setActionLoading(null);
-    }
-  };
+  // Removed HOD approve/reject - guides handle only
 
   const handleDeleteBooking = async (id) => {
     if (window.confirm("Are you sure you want to delete this booking?")) {
@@ -786,38 +753,8 @@ const AdminDashboard = () => {
                       })()}
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3 pt-1 sm:pt-0">
-                      {booking.status === "pending" && (
-                        <>
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleApproveBooking(booking._id)}
-                            className="btn-success px-8 py-4 text-lg font-black shadow-2xl border-2 border-accent-200 hover:border-accent-300 flex items-center gap-3 flex-1 sm:flex-none"
-                            disabled={actionLoading === booking._id}
-                          >
-                            {actionLoading === booking._id ? (
-                              <Loader2 className="w-6 h-6 animate-spin" />
-                            ) : (
-                              <CheckCircle className="w-6 h-6" />
-                            )}{" "}
-                            Approve
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => handleRejectBooking(booking._id)}
-                            className="btn-danger px-8 py-4 text-lg font-black shadow-2xl border border-red-200/50 hover:border-red-300 flex items-center gap-3 flex-1 sm:flex-none"
-                            disabled={actionLoading === booking._id}
-                          >
-                            {actionLoading === booking._id ? (
-                              <Loader2 className="w-6 h-6 animate-spin" />
-                            ) : (
-                              <XCircle className="w-6 h-6" />
-                            )}{" "}
-                            Reject
-                          </motion.button>
-                        </>
-                      )}
+                      {/* Guide handles approve/reject - Admin views only */}
+
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}

@@ -104,6 +104,34 @@ const createBatch = async (req, res) => {
       return res.status(400).json({ message: "Batch name already exists" });
     }
 
+    // Ensure the team leader exists as a user (students need to be present for OTP/login flows)
+    const existingTeamLeader = await User.findOne({
+      email: batchData.teamLeaderEmail,
+    });
+    if (!existingTeamLeader) {
+      // If roll number provided, ensure it's not already used by someone else
+      if (batchData.teamLeaderRollNo) {
+        const rollConflict = await User.findOne({
+          rollNo: batchData.teamLeaderRollNo,
+        });
+        if (rollConflict) {
+          return res
+            .status(400)
+            .json({ message: "Team leader roll number already in use" });
+        }
+      }
+
+      const newStudent = new User({
+        name: batchData.teamLeaderName,
+        email: batchData.teamLeaderEmail,
+        rollNo: batchData.teamLeaderRollNo || undefined,
+        role: "student",
+        isActive: true,
+      });
+      await newStudent.save();
+      console.log(`✅ Created student user for team leader: ${newStudent.email}`);
+    }
+
     const batch = new Batch(batchData);
     await batch.save();
     await batch.populate("guideId", "name email");
@@ -293,74 +321,6 @@ const deleteBatch = async (req, res) => {
 };
 
 // HOD Approve booking (admin approval)
-const approveBookingHOD = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const booking = await Booking.findOneAndUpdate(
-      { _id: id, status: "pending" },
-      { status: "approved" },
-      { new: true },
-    )
-      .populate("batchId", "teamLeaderEmail batchName")
-      .populate("guideId", "name email");
-
-    if (!booking) {
-      return res
-        .status(404)
-        .json({ message: "Booking not found or already approved" });
-    }
-
-    // Send approval email to student
-    await sendBookingEmail(booking.batchId.teamLeaderEmail, "approved", {
-      batchName: booking.batchId.batchName,
-      date: booking.date,
-      slotNumber: booking.slotNumber,
-      guideName: booking.guideId?.name || "Admin",
-    });
-
-    res.json({ message: "Booking approved by HOD", booking });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// HOD Reject booking
-const rejectBookingHOD = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const booking = await Booking.findOneAndUpdate(
-      { _id: id, status: "pending" },
-      { status: "rejected" },
-      { new: true },
-    )
-      .populate("batchId", "teamLeaderEmail batchName")
-      .populate("guideId", "email");
-
-    if (!booking) {
-      return res
-        .status(404)
-        .json({ message: "Booking not found or not pending" });
-    }
-
-    // Send rejection emails
-    await sendBookingEmail(booking.batchId.teamLeaderEmail, "rejected", {
-      batchName: booking.batchId.batchName,
-    });
-
-    if (booking.guideId?.email) {
-      await sendBookingEmail(booking.guideId.email, "guide-rejected", {
-        batchName: booking.batchId.batchName,
-        date: booking.date,
-        slotNumber: booking.slotNumber,
-      });
-    }
-
-    res.json({ message: "Booking rejected by HOD", booking });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
 // Generate report for download
 const generateReportAPI = async (req, res) => {
   try {
@@ -408,8 +368,6 @@ module.exports = {
   getBatches,
   updateBatch,
   deleteBatch,
-  approveBookingHOD,
-  rejectBookingHOD,
   generateReportAPI,
   getSettings,
   updateSettings,

@@ -5,6 +5,7 @@ const {
   getPendingBookings,
   approveBooking,
   rejectBooking,
+  getBatchDetails,
 } = require("../controllers/guideController");
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.get("/batches", getAssignedBatches);
 router.get("/pending-bookings", getPendingBookings);
 router.put("/bookings/:id/approve", approveBooking);
 router.put("/bookings/:id/reject", rejectBooking);
+router.get("/batches/:id", getBatchDetails);
 
 module.exports = router;

@@ -129,6 +129,19 @@ const bookSlot = async (req, res) => {
       if (!batch) {
         return res.status(404).json({ message: "Specified batch not found" });
       }
+
+      // Enforce student can only book for their own batch
+      const isOwner =
+        String(batch.teamLeaderEmail).toLowerCase() ===
+          String(req.user.email).toLowerCase() ||
+        (batch.teamLeaderRollNo &&
+          String(batch.teamLeaderRollNo) === String(req.user.rollNo));
+
+      if (!isOwner) {
+        return res
+          .status(403)
+          .json({ message: "You can only book slots for your own batch" });
+      }
     } else {
       batch = await Batch.findOne({
         $or: [

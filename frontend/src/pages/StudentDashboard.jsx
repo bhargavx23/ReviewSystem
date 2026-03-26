@@ -14,6 +14,7 @@ import BookingCalendar from "../components/Calendar.jsx";
 import { showToast } from "../components/Toaster";
 import { studentAPI } from "../services/api";
 import BatchGrid from "../components/BatchGrid.jsx";
+import BatchDetailsModal from "../components/BatchDetailsModal.jsx";
 
 const StudentDashboard = () => {
   const [myBatch, setMyBatch] = useState(null);
@@ -30,7 +31,6 @@ const StudentDashboard = () => {
   const [myBookings, setMyBookings] = useState([]);
   const [hasApprovedBooking, setHasApprovedBooking] = useState(false);
   const [guideData, setGuideData] = useState({ bookings: [], settings: {} });
-  const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedDateForSlot, setSelectedDateForSlot] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(1);
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -51,9 +51,10 @@ const StudentDashboard = () => {
         studentAPI.getAllBatches(),
       ]);
       const batchFromApi = myBatchRes.data?.batch || null;
+      const myBookingsFromApi = myBatchRes.data?.bookings || [];
       setMyBatch(batchFromApi);
       setActiveBatch(batchFromApi);
-      setMyBookings(myBatchRes.data?.bookings || []);
+      setMyBookings(myBookingsFromApi);
       setGuideData(guideRes.data || { bookings: [], settings: {} });
 
       const batches = allBatchesRes.data || [];
@@ -68,7 +69,9 @@ const StudentDashboard = () => {
         remaining: batches.length - approved - pending,
       });
 
-      setHasApprovedBooking(myBookings.some((b) => b.status === "approved"));
+      setHasApprovedBooking(
+        myBookingsFromApi.some((b) => b.status === "approved"),
+      );
     } catch (err) {
       console.error("Error fetching data:", err);
       if (err.response?.status !== 404) {
@@ -113,11 +116,11 @@ const StudentDashboard = () => {
     const avail = allSlots.filter((s) => !bookedSlots.includes(s));
     if (avail.length === 0) {
       showToast("All slots are booked for this date", "error");
+      setSelectedDateForSlot("");
       return;
     }
     setSelectedDateForSlot(dateStr);
     setAvailableSlots(avail);
-    setBookingOpen(true);
   };
 
   const handleBookSlot = async () => {
@@ -140,10 +143,10 @@ const StudentDashboard = () => {
         "✅ Slot booked successfully! Awaiting admin approval.",
         "success",
       );
-      setBookingOpen(false);
       setSelectedDateForSlot("");
       setSelectedSlot(1);
       setAvailableSlots([]);
+      setBookedSlotsCount(0);
       fetchData();
     } catch (err) {
       showToast(
@@ -370,294 +373,228 @@ const StudentDashboard = () => {
                 ? "✅ Slot approved. One booking per student."
                 : "Click dates to book slots. Colors show availability."}
             </p>
+            {!hasApprovedBooking && (
+              <div className="mb-6">
+                <button
+                  className="btn btn-primary opacity-70 cursor-not-allowed text-sm"
+                  disabled
+                >
+                  📅 Select date from calendar to book slot
+                </button>
+              </div>
+            )}
           </div>
-          <BookingCalendar
-            settings={guideData.settings}
-            bookings={guideData.bookings}
-            onDateSelect={hasApprovedBooking ? undefined : handleDateSelect}
-            height="500px"
-            className="px-6 pb-12"
-          />
+
+          <div className="p-6 lg:p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <BookingCalendar
+                  settings={guideData.settings}
+                  bookings={guideData.bookings}
+                  onDateSelect={
+                    hasApprovedBooking ? undefined : handleDateSelect
+                  }
+                  height="500px"
+                  className="px-6 pb-12"
+                />
+              </div>
+              {/* Desktop booking side-panel (shows on lg and up) */}
+              <div className="md:col-span-1 order-3 lg:order-2 self-start lg:sticky lg:top-24 lg:col-span-1">
+                <aside className="p-4 md:p-6 rounded-3xl shadow-2xl bg-white/80 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/50">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div className="flex-1">
+                      <h4 className="text-base md:text-lg font-extrabold leading-tight">
+                        {selectedDateForSlot
+                          ? `Book: ${new Date(selectedDateForSlot).toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}`
+                          : "Pick a date on the calendar"}
+                      </h4>
+                      <p className="text-xs md:text-sm text-slate-500 mt-1">
+                        Select slot below and confirm booking
+                      </p>
+                    </div>
+                    <div className="text-right hidden sm:block min-w-[80px]">
+                      <p className="text-xs text-slate-500">Slots/day</p>
+                      <div className="text-base md:text-lg font-bold text-primary-600">
+                        {guideData.settings?.slotsPerDay || 10}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4">
+                    <div className="flex flex-col items-center text-xs md:text-sm">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-accent-500/20 flex items-center justify-center mb-1 md:mb-2">
+                        <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-accent-500" />
+                      </div>
+                      <div className="font-bold">Booked</div>
+                      <div className="text-slate-500">{bookedSlotsCount}</div>
+                    </div>
+                    <div className="flex flex-col items-center text-xs md:text-sm">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-amber-500/20 flex items-center justify-center mb-1 md:mb-2">
+                        <Clock className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
+                      </div>
+                      <div className="font-bold">Available</div>
+                      <div className="text-slate-500">
+                        {availableSlots.length}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center text-xs md:text-sm">
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary-100 flex items-center justify-center mb-1 md:mb-2">
+                        <Calendar className="w-4 h-4 md:w-5 md:h-5 text-primary-600" />
+                      </div>
+                      <div className="font-bold">Total</div>
+                      <div className="text-slate-500">
+                        {guideData.settings?.slotsPerDay || 10}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-3 md:mb-5 bg-slate-50/70 dark:bg-slate-900/30 rounded-2xl p-2 md:p-4 max-h-48 md:max-h-64 overflow-auto">
+                    <div className="grid grid-cols-3 md:grid-cols-5 gap-1 md:gap-3">
+                      {(() => {
+                        const total =
+                          parseInt(guideData.settings?.slotsPerDay, 10) || 10;
+                        const dayBookings = guideData.bookings
+                          .filter(
+                            (b) =>
+                              new Date(b.date).toISOString().split("T")[0] ===
+                              selectedDateForSlot,
+                          )
+                          .map((b) => b.slotNumber);
+                        const allSlots = Array.from(
+                          { length: total },
+                          (_, i) => i + 1,
+                        );
+                        return allSlots.map((slot) => {
+                          const isBooked = dayBookings.includes(slot);
+                          const selected = selectedSlot === slot && !isBooked;
+                          return (
+                            <button
+                              key={slot}
+                              className={
+                                isBooked
+                                  ? "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-slate-200 text-slate-500 cursor-not-allowed rounded-lg"
+                                  : selected
+                                    ? "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg ring-2 md:ring-4 ring-primary-200/30 rounded-lg"
+                                    : "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:scale-105 rounded-lg hover:bg-primary-50"
+                              }
+                              onClick={() => !isBooked && setSelectedSlot(slot)}
+                              disabled={isBooked}
+                            >
+                              {slot}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 md:gap-3">
+                    <motion.button
+                      className="w-full py-2.5 md:py-3 text-sm md:text-lg rounded-lg font-black text-white bg-primary-600 hover:bg-primary-700 shadow-md disabled:opacity-60"
+                      onClick={handleBookSlot}
+                      disabled={!selectedDateForSlot}
+                      whileHover={!selectedDateForSlot ? {} : { scale: 1.02 }}
+                      whileTap={!selectedDateForSlot ? {} : { scale: 0.98 }}
+                    >
+                      Confirm Booking{" "}
+                      {selectedDateForSlot ? `Slot ${selectedSlot}` : ""}
+                    </motion.button>
+                    <button
+                      className="w-full py-2.5 md:py-3 text-sm md:text-lg rounded-lg font-bold border border-slate-200 bg-white/50 hover:bg-white/70 dark:bg-slate-800/50 dark:hover:bg-slate-800/70"
+                      onClick={() => {
+                        setSelectedDateForSlot("");
+                        setSelectedSlot(1);
+                        setAvailableSlots([]);
+                        setBookedSlotsCount(0);
+                      }}
+                    >
+                      Reset Selection
+                    </button>
+                  </div>
+                </aside>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-3xl overflow-hidden shadow-2xl">
+            <div className="p-10 lg:p-12 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-primary-50">
+              <h3 className="text-3xl font-black text-slate-900 flex items-center gap-4 mb-4">
+                My Bookings ({myBookings.length})
+              </h3>
+              {myBookings.length === 0 && (
+                <p className="text-xl text-slate-600">
+                  Book your first slot using calendar above!
+                </p>
+              )}
+            </div>
+            {myBookings.length === 0 ? (
+              <div className="p-20 text-center">
+                <Calendar className="w-28 h-28 text-slate-300 mx-auto mb-12 opacity-60" />
+                <h4 className="text-4xl font-black text-slate-500 mb-6">
+                  No Bookings Yet
+                </h4>
+                <p className="text-2xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
+                  Use calendar above to schedule your project review slot and
+                  track approval status here.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-12">
+                {myBookings.map((booking) => {
+                  const status = getStatusBadge(booking.status);
+                  const Icon = status.icon;
+                  return (
+                    <motion.div
+                      key={booking._id}
+                      className="glass-card p-8 rounded-2xl hover:shadow-xl group cursor-pointer border-l-8 border-primary-500 shadow-2xl"
+                      whileHover={{ y: -8, scale: 1.02 }}
+                    >
+                      <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/50">
+                        <div
+                          className={`p-3 rounded-2xl ${status.className.replace("badge-", "bg-")}`}
+                        >
+                          <Icon className="w-8 h-8 shadow-lg" />
+                        </div>
+                        <span
+                          className={`badge font-bold text-lg px-6 py-3 shadow-md ${status.className}`}
+                        >
+                          {status.label.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="space-y-4">
+                        <h4 className="text-3xl font-black text-slate-900">
+                          Slot {booking.slotNumber}
+                        </h4>
+                        <p className="text-2xl font-mono text-primary-600">
+                          {new Date(booking.date).toLocaleDateString("en-IN", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                      <div className="mt-8 pt-8 border-t border-slate-200/50">
+                        <p className="text-slate-600 text-lg group-hover:text-slate-800 transition-colors">
+                          {booking.batchId?.batchName || "Batch"}
+                        </p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </motion.section>
       )}
 
-      {/* My Bookings */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <div className="glass-card rounded-3xl overflow-hidden shadow-2xl">
-          <div className="p-10 lg:p-12 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-primary-50">
-            <h3 className="text-3xl font-black text-slate-900 flex items-center gap-4 mb-4">
-              My Bookings ({myBookings.length})
-            </h3>
-            {myBookings.length === 0 && (
-              <p className="text-xl text-slate-600">
-                Book your first slot using calendar above!
-              </p>
-            )}
-          </div>
-          {myBookings.length === 0 ? (
-            <div className="p-20 text-center">
-              <Calendar className="w-28 h-28 text-slate-300 mx-auto mb-12 opacity-60" />
-              <h4 className="text-4xl font-black text-slate-500 mb-6">
-                No Bookings Yet
-              </h4>
-              <p className="text-2xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
-                Use calendar above to schedule your project review slot and
-                track approval status here.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-12">
-              {myBookings.map((booking) => {
-                const status = getStatusBadge(booking.status);
-                const Icon = status.icon;
-                return (
-                  <motion.div
-                    key={booking._id}
-                    className="glass-card p-8 rounded-2xl hover:shadow-xl group cursor-pointer border-l-8 border-primary-500 shadow-2xl"
-                    whileHover={{ y: -8, scale: 1.02 }}
-                  >
-                    <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/50">
-                      <div
-                        className={`p-3 rounded-2xl ${status.className.replace("badge-", "bg-")}`}
-                      >
-                        <Icon className="w-8 h-8 shadow-lg" />
-                      </div>
-                      <span
-                        className={`badge font-bold text-lg px-6 py-3 shadow-md ${status.className}`}
-                      >
-                        {status.label.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="space-y-4">
-                      <h4 className="text-3xl font-black text-slate-900">
-                        Slot {booking.slotNumber}
-                      </h4>
-                      <p className="text-2xl font-mono text-primary-600">
-                        {new Date(booking.date).toLocaleDateString("en-IN", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    <div className="mt-8 pt-8 border-t border-slate-200/50">
-                      <p className="text-slate-600 text-lg group-hover:text-slate-800 transition-colors">
-                        {booking.batchId?.batchName || "Batch"}
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </motion.section>
-
-      {/* Batch Detail Modal */}
       {selectedBatchModal && (
-        <div
-          className="dialog-overlay"
-          onClick={() => setSelectedBatchModal(null)}
-        >
-          <div
-            className="dialog-content max-w-4xl p-0 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-10 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-primary-50 rounded-t-3xl">
-              <h3 className="text-4xl font-black flex items-center gap-6 text-slate-900">
-                <BookOpen className="w-16 h-16 text-primary-600 bg-primary-100 p-4 rounded-3xl shadow-2xl" />
-                {selectedBatchModal.batchName}
-              </h3>
-            </div>
-            <div className="p-12">
-              <div className="grid md:grid-cols-2 gap-12 mb-12">
-                <div>
-                  <h4 className="text-2xl font-bold text-slate-900 mb-8">
-                    Project Details
-                  </h4>
-                  <p className="text-3xl mb-8 font-black text-slate-800 leading-tight">
-                    {selectedBatchModal.projectTitle}
-                  </p>
-                  <div className="space-y-6 text-lg">
-                    <div className="flex items-center gap-4 p-6 bg-white/50 rounded-2xl shadow-sm">
-                      <Users className="w-12 h-12 text-accent-600 bg-accent-100 p-3 rounded-xl shadow-md" />
-                      <div>
-                        <p className="font-bold text-slate-700 text-xl">
-                          Team Leader
-                        </p>
-                        <p className="font-black text-2xl">
-                          {selectedBatchModal.teamLeaderName}
-                        </p>
-                      </div>
-                    </div>
-                    {selectedBatchModal.guideId && (
-                      <div className="flex items-center gap-4 p-6 bg-primary-50 rounded-2xl shadow-sm">
-                        <Users2 className="w-12 h-12 text-primary-600 bg-primary-200 p-3 rounded-xl shadow-md" />
-                        <div>
-                          <p className="font-bold text-slate-700 text-xl">
-                            Guide
-                          </p>
-                          <p className="font-black text-2xl text-primary-800">
-                            {selectedBatchModal.guideId.name}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="pt-8 md:pt-0 md:border-l border-slate-200">
-                  <h4 className="text-2xl font-bold text-slate-900 mb-8">
-                    Status
-                  </h4>
-                  <div
-                    className={`badge font-bold px-12 py-6 text-3xl rounded-3xl shadow-2xl mb-8 ${getStatusBadge(selectedBatchModal.status).className}`}
-                  >
-                    {getStatusBadge(
-                      selectedBatchModal.status,
-                    ).label.toUpperCase()}
-                  </div>
-                  {selectedBatchModal.status === "not-booked" && (
-                    <motion.button
-                      className="btn btn-primary btn-lg w-full gap-4 text-xl shadow-2xl font-black py-8 text-white bg-primary-600"
-                      whileHover={{ scale: 1.05 }}
-                      onClick={() => {
-                        setSelectedBatchModal(null);
-                        showToast(
-                          "Use main calendar to book slots for your own batch!",
-                          "info",
-                        );
-                      }}
-                    >
-                      <Calendar className="w-8 h-8" />
-                      Book Slot (Your Batch Only)
-                    </motion.button>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-6 pt-12 border-t border-slate-200">
-                <button
-                  className="btn btn-outline btn-slate flex-1 py-4 text-lg font-bold"
-                  onClick={() => setSelectedBatchModal(null)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Slot Booking Modal */}
-      {bookingOpen && (
-        <div
-          className="dialog-overlay"
-          onClick={() => {
-            setBookingOpen(false);
-            setSelectedDateForSlot("");
-            setSelectedSlot(1);
-            setAvailableSlots([]);
-          }}
-        >
-          <div
-            className="dialog-content max-w-2xl rounded-3xl shadow-2xl p-0 z-50 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-10 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-primary-50 rounded-t-3xl">
-              <h3 className="text-4xl font-black text-slate-900 flex items-center gap-6 mb-2">
-                <Calendar className="w-16 h-16 text-primary-600 bg-primary-100 p-4 rounded-3xl shadow-2xl" />
-                Book Slot for
-              </h3>
-              <p className="text-2xl font-bold text-primary-700">
-                {new Date(selectedDateForSlot).toLocaleDateString("en-IN", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
-            </div>
-            <div className="p-12">
-              <div className="stats stats-vertical lg:stats-horizontal shadow-xl bg-slate-50/50 p-8 rounded-3xl mb-12">
-                <div className="stat">
-                  <div className="stat-title font-bold text-slate-700">
-                    Booked Slots
-                  </div>
-                  <div className="stat-value text-danger">
-                    {bookedSlotsCount}
-                  </div>
-                </div>
-                <div className="stat">
-                  <div className="stat-title font-bold text-slate-700">
-                    Available
-                  </div>
-                  <div className="stat-value text-success">
-                    {availableSlots.length}
-                  </div>
-                </div>
-                <div className="stat">
-                  <div className="stat-title font-bold text-slate-700">
-                    Total
-                  </div>
-                  <div className="stat-value text-primary-600">
-                    {guideData.settings?.slotsPerDay || 10}
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-12 p-8 bg-slate-50/50 rounded-3xl">
-                {availableSlots.map((slot) => (
-                  <motion.button
-                    key={slot}
-                    className={`btn font-bold text-xl aspect-square shadow-lg hover:shadow-xl transition-all ${
-                      selectedSlot === slot
-                        ? "btn-primary bg-primary-600 hover:bg-primary-700 shadow-primary-500/25"
-                        : "btn-outline btn-primary hover:bg-primary-50"
-                    }`}
-                    onClick={() => setSelectedSlot(slot)}
-                    whileHover={{ scale: 1.15 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {slot}
-                  </motion.button>
-                ))}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-6 pt-12 border-t-2 border-slate-200 bg-slate-50/50 p-8 rounded-b-3xl">
-                <button
-                  className="btn btn-outline btn-slate order-2 sm:order-1 flex-1 py-4 text-lg font-bold"
-                  onClick={() => {
-                    setBookingOpen(false);
-                    setSelectedDateForSlot("");
-                    setSelectedSlot(1);
-                    setAvailableSlots([]);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-primary order-1 sm:order-2 flex-1 py-4 text-lg font-bold gap-4 shadow-2xl hover:shadow-3xl text-white bg-primary-600 z-50"
-                  onClick={handleBookSlot}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? (
-                    <>
-                      <Loader2 className="w-8 h-8 animate-spin text-white" />
-                      Booking...
-                    </>
-                  ) : (
-                    <>
-                      <span>Book Slot {selectedSlot}</span>
-                      <Calendar className="w-6 h-6" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <BatchDetailsModal
+          batchId={selectedBatchModal._id}
+          initialBatch={selectedBatchModal}
+          isOpen={!!selectedBatchModal}
+          onClose={() => setSelectedBatchModal(null)}
+        />
       )}
     </motion.div>
   );
