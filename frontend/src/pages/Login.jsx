@@ -11,6 +11,7 @@ const Login = ({ setUser }) => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [sentToEmail, setSentToEmail] = useState(null);
   const navigate = useNavigate();
 
   const sendOtpHandler = async () => {
@@ -30,7 +31,9 @@ const Login = ({ setUser }) => {
     showToast("Sending OTP...", "loading");
 
     try {
-      await authAPI.sendOtp({ emailOrRollNo });
+      const response = await authAPI.sendOtp({ emailOrRollNo });
+      const recipient = response.data?.email || emailOrRollNo;
+      setSentToEmail(recipient);
       showToast("✅ OTP sent to your email!", "success");
       setCooldownUntil(Date.now() + 60 * 1000); // 60s cooldown
       setStep(2);
@@ -182,7 +185,9 @@ const Login = ({ setUser }) => {
                     className="inline-flex items-center gap-2 bg-gradient-to-r from-accent-100 to-teal-100/80 text-accent-800 border border-accent-200/50 px-5 py-3 rounded-2xl mb-6 font-mono font-bold text-base sm:text-lg shadow-lg hover:shadow-accent-300/50 transition-all duration-300 cursor-default"
                   >
                     <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span className="break-all">{emailOrRollNo}</span>
+                    <span className="break-all">
+                      {sentToEmail || emailOrRollNo}
+                    </span>
                   </motion.div>
                   <motion.h3
                     initial={{ opacity: 0 }}
@@ -236,6 +241,7 @@ const Login = ({ setUser }) => {
                     onClick={() => {
                       setStep(1);
                       setOtp("");
+                      setSentToEmail(null);
                     }}
                     className="group relative w-full py-4 px-6 bg-white/60 backdrop-blur-sm border-2 border-slate-200/70 hover:border-slate-400 hover:bg-slate-50/80 text-slate-700 font-bold text-base sm:text-lg rounded-2xl shadow-lg hover:shadow-xl active:translate-y-px transition-all duration-300"
                   >

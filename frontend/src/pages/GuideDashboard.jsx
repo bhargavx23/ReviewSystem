@@ -25,6 +25,7 @@ const GuideDashboard = () => {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [downloadingReport, setDownloadingReport] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -105,6 +106,61 @@ const GuideDashboard = () => {
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()),
   );
+
+  const handleDownloadAll = async (format) => {
+    try {
+      setDownloadingReport(format);
+      const res = await guideAPI.getReports(format);
+
+      const filenameMap = {
+        excel: "assigned-batches.xlsx",
+        pdf: "assigned-batches.pdf",
+        csv: "assigned-batches.csv",
+        docx: "assigned-batches.docx",
+      };
+
+      if (format === "csv") {
+        const blob = new Blob([res.data], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filenameMap.csv;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } else if (format === "json") {
+        const blob = new Blob([JSON.stringify(res.data, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `assigned-batches.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } else {
+        const blob = new Blob([res.data], { type: res.headers["content-type"] || "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filenameMap[format] || `assigned-batches.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      showToast("Report downloaded", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to download report", "error");
+    } finally {
+      setDownloadingReport("");
+    }
+  };
 
   const StatsCard = ({
     icon: Icon,
@@ -190,6 +246,29 @@ const GuideDashboard = () => {
                   className="pl-10 pr-4 py-2 rounded-lg border border-slate-200 bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2">
+              <button
+                onClick={() => handleDownloadAll("csv")}
+                disabled={downloadingReport}
+                className="px-3 py-2 rounded-md bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
+              >
+                {downloadingReport === "csv" ? "Downloading..." : "CSV"}
+              </button>
+              <button
+                onClick={() => handleDownloadAll("pdf")}
+                disabled={downloadingReport}
+                className="px-3 py-2 rounded-md bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
+              >
+                {downloadingReport === "pdf" ? "Downloading..." : "PDF"}
+              </button>
+              <button
+                onClick={() => handleDownloadAll("docx")}
+                disabled={downloadingReport}
+                className="px-3 py-2 rounded-md bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
+              >
+                {downloadingReport === "docx" ? "Downloading..." : "DOCX"}
+              </button>
             </div>
           </div>
         </header>

@@ -51,10 +51,36 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// Error handling middleware
+// Enhanced error handling middleware - catches ObjectId cast errors
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: "Something went wrong!" });
+  console.error("❌ ERROR:", {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    params: req.params,
+    body: req.body,
+    query: req.query,
+  });
+
+  // Specific handling for ObjectId cast errors
+  if (err.name === "CastError" && err.kind === "ObjectId") {
+    console.error("🔍 ObjectId Cast Error Details:", {
+      invalidValue: err.value,
+      path: err.path,
+      fullUrl: req.originalUrl,
+    });
+    return res.status(400).json({
+      message: `Invalid ID "${err.value}" for ${err.path || "model"}. Use 24-char ObjectId.`,
+      error: "CastError",
+      invalidValue: err.value,
+    });
+  }
+
+  res.status(500).json({
+    message: err.message || "Something went wrong!",
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  });
 });
 
 const PORT = process.env.PORT || 5000;

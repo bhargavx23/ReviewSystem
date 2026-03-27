@@ -10,14 +10,23 @@ const createUser = async (req, res) => {
   try {
     const { name, email, rollNo, role } = req.body;
 
-    // Trim and validate
-    if (!name?.trim() || !email?.trim() || !rollNo?.trim() || !role) {
-      return res.status(400).json({ message: "All fields are required" });
+    // Trim and validate: rollNo is required for students, optional for guides/admins
+    if (!name?.trim() || !email?.trim() || !role) {
+      return res
+        .status(400)
+        .json({ message: "Name, email and role are required" });
     }
 
-    const existingUser = await User.findOne({
-      $or: [{ email: email.trim().toLowerCase() }, { rollNo: rollNo.trim() }],
-    });
+    if (role === "student" && !rollNo?.trim()) {
+      return res
+        .status(400)
+        .json({ message: "Roll number is required for students" });
+    }
+
+    const orConditions = [{ email: email.trim().toLowerCase() }];
+    if (rollNo?.trim()) orConditions.push({ rollNo: rollNo.trim() });
+
+    const existingUser = await User.findOne({ $or: orConditions });
 
     if (existingUser) {
       return res.status(400).json({
@@ -25,13 +34,15 @@ const createUser = async (req, res) => {
       });
     }
 
-    const user = new User({
+    const userData = {
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      rollNo: rollNo.trim(),
       role,
       isActive: true,
-    });
+    };
+    if (rollNo?.trim()) userData.rollNo = rollNo.trim();
+
+    const user = new User(userData);
     await user.save();
 
     console.log(`✅ Created user: ${user.name} (${user.role})`);
@@ -108,29 +119,42 @@ const createBatch = async (req, res) => {
     const existingTeamLeader = await User.findOne({
       email: batchData.teamLeaderEmail,
     });
-    if (!existingTeamLeader) {
-      // If roll number provided, ensure it's not already used by someone else
-      if (batchData.teamLeaderRollNo) {
-        const rollConflict = await User.findOne({
-          rollNo: batchData.teamLeaderRollNo,
-        });
-        if (rollConflict) {
-          return res
-            .status(400)
-            .json({ message: "Team leader roll number already in use" });
-        }
+
+    // If an existing user with this email exists, do not silently reuse it.
+    // For students we must show that the email already exists so admin can
+    // take corrective action instead of creating duplicate batch entries.
+    if (existingTeamLeader) {
+      if (existingTeamLeader.role === "student") {
+        return res.status(400).json({ message: "Student email already exists" });
       }
 
-      const newStudent = new User({
-        name: batchData.teamLeaderName,
-        email: batchData.teamLeaderEmail,
-        rollNo: batchData.teamLeaderRollNo || undefined,
-        role: "student",
-        isActive: true,
-      });
-      await newStudent.save();
-      console.log(`✅ Created student user for team leader: ${newStudent.email}`);
+      // If email exists but is not a student (e.g. guide/admin), disallow
+      // using it as a team leader email to avoid confusing ownership.
+      return res.status(400).json({ message: "Email already exists in system" });
     }
+
+    // If we reach here, the team leader email is not present in the users
+    // collection so create the student record.
+    if (batchData.teamLeaderRollNo) {
+      const rollConflict = await User.findOne({
+        rollNo: batchData.teamLeaderRollNo,
+      });
+      if (rollConflict) {
+        return res
+          .status(400)
+          .json({ message: "Team leader roll number already in use" });
+      }
+    }
+
+    const newStudent = new User({
+      name: batchData.teamLeaderName,
+      email: batchData.teamLeaderEmail,
+      rollNo: batchData.teamLeaderRollNo || undefined,
+      role: "student",
+      isActive: true,
+    });
+    await newStudent.save();
+    console.log(`✅ Created student user for team leader: ${newStudent.email}`);
 
     const batch = new Batch(batchData);
     await batch.save();

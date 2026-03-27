@@ -4,8 +4,8 @@ const excelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
 const { parse } = require("json2csv");
 
-const generateReport = async (format = "json") => {
-  const bookings = await Booking.find()
+const generateReport = async (format = "json", filter = {}) => {
+  const bookings = await Booking.find(filter)
     .populate(
       "batchId",
       "batchName projectTitle teamLeaderName teamLeaderEmail section",

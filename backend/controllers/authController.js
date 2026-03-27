@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const { sendOtpEmail } = require("../utils/email");
 const crypto = require("crypto");
 const User = require("../models/User");
+const Batch = require("../models/Batch");
 
 const rateLimit = require("express-rate-limit");
 
@@ -22,6 +23,11 @@ const generateOtp = () => {
   return crypto.randomInt(100000, 999999).toString();
 };
 
+// Escape user input for safe regex usage
+const escapeRegex = (str) => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
 // Send OTP
 const sendOtp = async (req, res) => {
   try {
@@ -32,15 +38,61 @@ const sendOtp = async (req, res) => {
       return res.status(400).json({ message: "Email or roll number required" });
     }
 
-    // Normalize input: trim and lowercase if it looks like an email
+    // Normalize input: trim. For emails use exact lowercase match; for rollNo use case-insensitive match
     const rawInput = emailOrRollNo.trim();
-    const normalized = rawInput.includes("@")
+    const normalizedEmail = rawInput.includes("@")
       ? rawInput.toLowerCase()
-      : rawInput;
+      : null;
 
-    const user = await User.findOne({
-      $or: [{ email: normalized }, { rollNo: normalized }],
-    });
+    let user;
+    if (normalizedEmail) {
+      user = await User.findOne({ email: normalizedEmail });
+    } else {
+      const q = {
+        rollNo: { $regex: `^${escapeRegex(rawInput)}$`, $options: "i" },
+      };
+      user = await User.findOne(q);
+
+      // Fallback: if no User found by rollNo, try to find a Batch with matching teamLeaderRollNo
+      // and ensure a corresponding User exists (created if missing). This helps when
+      // batches were added without creating a student user earlier.
+      if (!user) {
+        console.log(
+          `[/api/auth/send-otp] no user by rollNo, trying Batch fallback for: ${rawInput}`,
+        );
+        const batch = await Batch.findOne({
+          teamLeaderRollNo: { $regex: `^${escapeRegex(rawInput)}$`, $options: "i" },
+        });
+        if (batch) {
+          // try find user by email from batch
+          user = await User.findOne({ email: batch.teamLeaderEmail });
+          if (!user) {
+            // create a student user record so OTP flow continues
+            const newUser = new User({
+              name: batch.teamLeaderName,
+              email: batch.teamLeaderEmail.toLowerCase(),
+              rollNo: batch.teamLeaderRollNo || undefined,
+              role: "student",
+              isActive: true,
+            });
+            try {
+              await newUser.save();
+              user = newUser;
+              console.log(`✅ Created user from batch for ${newUser.email}`);
+            } catch (createErr) {
+              console.error("Error creating user from batch fallback:", createErr);
+            }
+          } else if (!user.rollNo && batch.teamLeaderRollNo) {
+            user.rollNo = batch.teamLeaderRollNo;
+            try {
+              await user.save();
+            } catch (upErr) {
+              console.error("Error updating user.rollNo from batch:", upErr);
+            }
+          }
+        }
+      }
+    }
 
     if (!user || !user.isActive) {
       return res.status(404).json({ message: "User not found" });
@@ -64,7 +116,10 @@ const sendOtp = async (req, res) => {
       // don't fail the whole flow for email errors; still return success
     }
 
-    return res.json({ message: "OTP sent successfully to your email" });
+    return res.json({
+      message: "OTP sent successfully to your email",
+      email: user.email,
+    });
   } catch (err) {
     console.error("Error sending OTP:", err && err.stack ? err.stack : err);
     res
@@ -76,21 +131,62 @@ const sendOtp = async (req, res) => {
 // Verify OTP and generate JWT
 const verifyOtp = async (req, res) => {
   try {
+    console.log("[/api/auth/verify-otp] request body:", req.body);
     const { emailOrRollNo, otp } = req.body;
 
     if (!emailOrRollNo || !otp) {
       return res.status(400).json({ message: "Email/rollNo and OTP required" });
     }
 
-    // Normalize input similar to sendOtp
+    // Normalize input similar to sendOtp: for emails use exact lowercase match; for rollNo use case-insensitive match
     const rawInput = emailOrRollNo.trim();
-    const normalized = rawInput.includes("@")
+    const normalizedEmail = rawInput.includes("@")
       ? rawInput.toLowerCase()
-      : rawInput;
+      : null;
 
-    const user = await User.findOne({
-      $or: [{ email: normalized }, { rollNo: normalized }],
-    });
+    let user;
+    if (normalizedEmail) {
+      user = await User.findOne({ email: normalizedEmail });
+    } else {
+      const q = {
+        rollNo: { $regex: `^${escapeRegex(rawInput)}$`, $options: "i" },
+      };
+      user = await User.findOne(q);
+
+      // Fallback: if no User found by rollNo, try Batch and create/find corresponding User
+      if (!user) {
+        console.log(`[/api/auth/verify-otp] no user by rollNo, trying Batch fallback for: ${rawInput}`);
+        const batch = await Batch.findOne({
+          teamLeaderRollNo: { $regex: `^${escapeRegex(rawInput)}$`, $options: "i" },
+        });
+        if (batch) {
+          user = await User.findOne({ email: batch.teamLeaderEmail });
+          if (!user) {
+            const newUser = new User({
+              name: batch.teamLeaderName,
+              email: batch.teamLeaderEmail.toLowerCase(),
+              rollNo: batch.teamLeaderRollNo || undefined,
+              role: "student",
+              isActive: true,
+            });
+            try {
+              await newUser.save();
+              user = newUser;
+              console.log(`✅ Created user from batch for verify flow: ${newUser.email}`);
+            } catch (createErr) {
+              console.error("Error creating user from batch in verify flow:", createErr);
+            }
+          } else if (!user.rollNo && batch.teamLeaderRollNo) {
+            user.rollNo = batch.teamLeaderRollNo;
+            try {
+              await user.save();
+            } catch (upErr) {
+              console.error("Error updating user.rollNo from batch in verify flow:", upErr);
+            }
+          }
+        }
+      }
+    }
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });

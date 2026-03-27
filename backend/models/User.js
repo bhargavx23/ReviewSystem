@@ -16,7 +16,16 @@ const userSchema = new mongoose.Schema(
 
 // Hash OTP before saving
 userSchema.pre("save", async function (next) {
-  if (this.otp) {
+  // Normalize email and rollNo to ensure case-insensitive lookups
+  if (this.isModified("email") && this.email) {
+    this.email = this.email.toLowerCase();
+  }
+  if (this.isModified("rollNo") && this.rollNo) {
+    this.rollNo = this.rollNo.toUpperCase();
+  }
+
+  // Hash OTP before saving when present and modified
+  if (this.isModified("otp") && this.otp) {
     this.otp = await bcrypt.hash(this.otp.toString(), 10);
   }
   next();

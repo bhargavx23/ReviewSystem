@@ -8,14 +8,14 @@ dotenv.config({ path: path.join(__dirname, "..", ".env") });
 const { getMongoUri } = require("../utils/db");
 const Batch = require("../models/Batch");
 
-const emailArg = process.argv[2];
-if (!emailArg) {
-  console.error("Usage: node scripts/check_batch.js <teamLeaderEmail>");
-  process.exit(1);
-}
 
-const rawInput = emailArg.trim();
-const normalized = rawInput.includes("@") ? rawInput.toLowerCase() : rawInput;
+const emailArg = process.argv[2];
+let query = {};
+if (emailArg) {
+  const rawInput = emailArg.trim();
+  const normalized = rawInput.includes("@") ? rawInput.toLowerCase() : rawInput;
+  query.teamLeaderEmail = normalized;
+}
 
 (async () => {
   try {
@@ -26,12 +26,20 @@ const normalized = rawInput.includes("@") ? rawInput.toLowerCase() : rawInput;
     });
     console.log("Connected to MongoDB");
 
-    const batches = await Batch.find({ teamLeaderEmail: normalized }).lean();
+    const batches = await Batch.find(query).lean();
 
     if (!batches || batches.length === 0) {
-      console.log(`No batches found with teamLeaderEmail: ${emailArg}`);
+      if (emailArg) {
+        console.log(`No batches found with teamLeaderEmail: ${emailArg}`);
+      } else {
+        console.log('No batches found in the database.');
+      }
     } else {
-      console.log(`Found ${batches.length} batch(es):`);
+      if (emailArg) {
+        console.log(`Found ${batches.length} batch(es) with teamLeaderEmail: ${emailArg}`);
+      } else {
+        console.log(`Found ${batches.length} batch(es) in the database:`);
+      }
       console.log(JSON.stringify(batches, null, 2));
     }
   } catch (err) {

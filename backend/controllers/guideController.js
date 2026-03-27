@@ -45,30 +45,54 @@ const getPendingBookings = async (req, res) => {
 const approveBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const booking = await Booking.findOneAndUpdate(
-      { _id: id, guideId: req.user._id, status: "pending" },
-      { status: "approved" },
-      { new: true },
-    ).populate("batchId", "teamLeaderEmail batchName date slotNumber");
+      const booking = await Booking.findOneAndUpdate(
+        { _id: id, guideId: req.user._id, status: "pending" },
+        { status: "approved" },
+        { new: true },
+      );
 
-    // include student info for response and notifications
-    await booking.populate("studentId", "name email");
+      if (!booking) {
+        return res
+          .status(404)
+          .json({ message: "Booking not found or already processed" });
+      }
 
-    if (!booking) {
-      return res
-        .status(404)
-        .json({ message: "Booking not found or already processed" });
-    }
+      // Populate related fields after verifying booking exists
+      await booking.populate("batchId", "teamLeaderEmail batchName");
+      await booking.populate("studentId", "name email");
 
-    // Send approval email
-    await sendBookingEmail(booking.batchId.teamLeaderEmail, "approved", {
-      batchName: booking.batchId.batchName,
-      date: booking.date,
-      slotNumber: booking.slotNumber,
-      guideName: req.user.name,
-    });
+      // Send approval email (best-effort)
+      //  - student (team leader)
+      await sendBookingEmail(booking.batchId.teamLeaderEmail, "approved", {
+        batchName: booking.batchId.batchName,
+        date: booking.date,
+        slotNumber: booking.slotNumber,
+        guideName: req.user.name,
+      }).catch(console.error);
 
-    res.json({ message: "Booking approved", booking });
+      //  - notify guide (who performed the approval) for record
+      if (req.user.email) {
+        await sendBookingEmail(req.user.email, "approved", {
+          batchName: booking.batchId.batchName,
+          date: booking.date,
+          slotNumber: booking.slotNumber,
+          guideName: req.user.name,
+        }).catch(console.error);
+      }
+
+      //  - notify all admins about the approval
+      const User = require("../models/User");
+      const admins = await User.find({ role: "admin", isActive: true });
+      for (const admin of admins) {
+        await sendBookingEmail(admin.email, "approved", {
+          batchName: booking.batchId.batchName,
+          date: booking.date,
+          slotNumber: booking.slotNumber,
+          guideName: req.user.name,
+        }).catch(console.error);
+      }
+
+      res.json({ message: "Booking approved", booking });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -102,7 +126,7 @@ const getBatchDetails = async (req, res) => {
   try {
     const { id } = req.params;
     // validate id to avoid cast errors in aggregation
-    if (!mongoose.isValidObjectId(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid batch id" });
     }
     const batch = await Batch.findOne({
@@ -150,10 +174,62 @@ const getBatchDetails = async (req, res) => {
   }
 };
 
+// Generate report for guide's batches (supports format and optional batchId)
+const generateReportForGuide = async (req, res) => {
+  try {
+    const { format = "json", batchId } = req.query;
+    const { generateReport } = require("../utils/reports");
+
+    // Build filter scoped to this guide
+    const filter = { guideId: req.user._id };
+    if (batchId) {
+      const mongoose = require("mongoose");
+      if (!mongoose.Types.ObjectId.isValid(batchId)) {
+        return res.status(400).json({ message: "Invalid batch id" });
+      }
+      filter.batchId = batchId;
+    }
+
+    const report = await generateReport(format, filter);
+
+    if (format === "excel") {
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=slot-bookings.xlsx",
+      );
+      res.send(report);
+    } else if (format === "pdf") {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=slot-bookings.pdf");
+      res.send(report);
+    } else if (format === "csv") {
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=slot-bookings.csv");
+      res.send(report);
+    } else if (format === "docx") {
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      );
+      res.setHeader("Content-Disposition", "attachment; filename=slot-bookings.docx");
+      res.send(report);
+    } else {
+      res.json(report);
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getAssignedBatches,
   getPendingBookings,
   approveBooking,
   rejectBooking,
   getBatchDetails,
+  generateReportForGuide,
 };

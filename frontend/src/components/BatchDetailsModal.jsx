@@ -21,6 +21,7 @@ const BatchDetailsModal = ({
 }) => {
   const [batch, setBatch] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -42,6 +43,63 @@ const BatchDetailsModal = ({
       showToast("Failed to load batch details", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async (format) => {
+    if (!batch) return;
+    try {
+      setDownloading(format);
+      const res = await guideAPI.getReports(format, batch._id);
+
+      const filenameMap = {
+        excel: "slot-bookings.xlsx",
+        pdf: "slot-bookings.pdf",
+        csv: "slot-bookings.csv",
+        docx: "slot-bookings.docx",
+      };
+
+      if (format === "json") {
+        const blob = new Blob([JSON.stringify(res.data, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `slot-bookings-${batch.batchName || batch._id}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } else if (format === "csv") {
+        const blob = new Blob([res.data], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filenameMap.csv;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } else {
+        // arraybuffer -> blob
+        const blob = new Blob([res.data], { type: res.headers["content-type"] || "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filenameMap[format] || `slot-bookings.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      showToast("Report downloaded", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to download report", "error");
+    } finally {
+      setDownloading("");
     }
   };
 
@@ -97,14 +155,53 @@ const BatchDetailsModal = ({
                   </p>
                 </div>
               </div>
-              <motion.button
-                onClick={onClose}
-                className="p-2 hover:bg-slate-200 rounded-xl transition-all group"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <X className="w-6 h-6 text-slate-500 group-hover:text-slate-700" />
-              </motion.button>
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownload("json")}
+                    disabled={!batch}
+                    className="px-3 py-2 rounded-md bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
+                  >
+                    {downloading === "json" ? "Downloading..." : "JSON"}
+                  </button>
+                  <button
+                    onClick={() => handleDownload("csv")}
+                    disabled={!batch}
+                    className="px-3 py-2 rounded-md bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
+                  >
+                    {downloading === "csv" ? "Downloading..." : "CSV"}
+                  </button>
+                  <button
+                    onClick={() => handleDownload("excel")}
+                    disabled={!batch}
+                    className="px-3 py-2 rounded-md bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
+                  >
+                    {downloading === "excel" ? "Downloading..." : "XLSX"}
+                  </button>
+                  <button
+                    onClick={() => handleDownload("pdf")}
+                    disabled={!batch}
+                    className="px-3 py-2 rounded-md bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
+                  >
+                    {downloading === "pdf" ? "Downloading..." : "PDF"}
+                  </button>
+                  <button
+                    onClick={() => handleDownload("docx")}
+                    disabled={!batch}
+                    className="px-3 py-2 rounded-md bg-slate-100 text-sm text-slate-700 hover:bg-slate-200"
+                  >
+                    {downloading === "docx" ? "Downloading..." : "DOCX"}
+                  </button>
+                </div>
+                <motion.button
+                  onClick={onClose}
+                  className="p-2 hover:bg-slate-200 rounded-xl transition-all group"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <X className="w-6 h-6 text-slate-500 group-hover:text-slate-700" />
+                </motion.button>
+              </div>
             </div>
           </div>
 

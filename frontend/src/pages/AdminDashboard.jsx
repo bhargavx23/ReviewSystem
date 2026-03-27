@@ -51,6 +51,7 @@ const AdminDashboard = () => {
   });
   const [tabView, setTabView] = useState("batches");
   const [editingBatch, setEditingBatch] = useState(null);
+  const [batchFormErrors, setBatchFormErrors] = useState({});
   const [settingsData, setSettingsData] = useState({});
   const [roleFilter, setRoleFilter] = useState("");
 
@@ -99,7 +100,11 @@ const AdminDashboard = () => {
 
   const handleCreateUser = async () => {
     try {
-      if (!userFormData.name || !userFormData.email || !userFormData.rollNo) {
+      if (
+        !userFormData.name ||
+        !userFormData.email ||
+        (userFormData.role === "student" && !userFormData.rollNo)
+      ) {
         showToast("Please fill all fields", "error");
         return;
       }
@@ -156,9 +161,19 @@ const AdminDashboard = () => {
         teamLeaderEmail: "",
         teamLeaderRollNo: "",
       });
+      setBatchFormErrors({});
       fetchData();
     } catch (err) {
-      showToast(err.response?.data?.message || "Error creating batch", "error");
+      const msg = err.response?.data?.message;
+
+      // Surface specific server validation messages inline where appropriate
+      if (msg && msg.toLowerCase().includes("email")) {
+        setBatchFormErrors({ teamLeaderEmail: msg });
+      } else if (msg && msg.toLowerCase().includes("roll")) {
+        setBatchFormErrors({ teamLeaderRollNo: msg });
+      } else {
+        showToast(msg || "Error creating batch", "error");
+      }
     }
   };
 
@@ -833,7 +848,7 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-3">
-                    Roll Number *
+                    Roll Number {userFormData.role === "student" ? "*" : ""}
                   </label>
                   <input
                     type="text"
@@ -878,7 +893,7 @@ const AdminDashboard = () => {
                   disabled={
                     !userFormData.name ||
                     !userFormData.email ||
-                    !userFormData.rollNo
+                    (userFormData.role === "student" && !userFormData.rollNo)
                   }
                 >
                   <UserPlus className="w-5 h-5" /> Create User
@@ -1026,6 +1041,11 @@ const AdminDashboard = () => {
                         })
                       }
                     />
+                    {batchFormErrors.teamLeaderEmail && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {batchFormErrors.teamLeaderEmail}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-3">
@@ -1043,6 +1063,11 @@ const AdminDashboard = () => {
                         })
                       }
                     />
+                    {batchFormErrors.teamLeaderRollNo && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {batchFormErrors.teamLeaderRollNo}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

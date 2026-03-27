@@ -11,6 +11,14 @@ const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use((config) => {
+  // Lightweight debug log to help trace API calls from the frontend
+  try {
+    console.debug(
+      `API Request → ${config.method?.toUpperCase() || "GET"} ${config.baseURL || ""}${config.url}`,
+    );
+  } catch (e) {
+    /* ignore logging errors */
+  }
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -22,6 +30,18 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log response error details for easier debugging in browser console
+    try {
+      console.error(
+        "API Response Error →",
+        error?.response?.status,
+        error?.config?.method?.toUpperCase(),
+        error?.config?.url,
+        error?.response?.data,
+      );
+    } catch (e) {
+      /* ignore */
+    }
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("role");
@@ -62,6 +82,17 @@ export const guideAPI = {
   getBatch: (id) => api.get(`/guide/batches/${id}`),
   approveBooking: (id) => api.put(`/guide/bookings/${id}/approve`),
   rejectBooking: (id) => api.put(`/guide/bookings/${id}/reject`),
+  getReports: (format = "json", batchId) => {
+    const qs = `?format=${format}${batchId ? `&batchId=${batchId}` : ""}`;
+    // Binary formats should be downloaded as arraybuffer
+    if (format === "excel" || format === "pdf" || format === "docx") {
+      return api.get(`/guide/reports${qs}`, { responseType: "arraybuffer" });
+    }
+    if (format === "csv") {
+      return api.get(`/guide/reports${qs}`, { responseType: "text" });
+    }
+    return api.get(`/guide/reports${qs}`);
+  },
 };
 
 export const studentAPI = {
