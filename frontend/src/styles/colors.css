@@ -1,0 +1,89 @@
+/* Perfect Modern Light Color Palette - Indigo/Emerald/Amber
+   Light theme only, no dark mode. High contrast, professional for slot booking app.
+   Synced with DaisyUI 'modern' theme tokens.
+*/
+:root {
+  /* Primary Indigo-Blue */
+  --color-primary: #5a67d8;
+  --color-primary-focus: #4c51bf;
+  --color-primary-100: #ebf4ff;
+  --color-primary-content: #ffffff;
+
+  /* Secondary Emerald */
+  --color-secondary: #48bb78;
+  --color-secondary-focus: #38a169;
+
+  /* Accent Amber */
+  --color-accent: #ed8936;
+  --color-accent-focus: #dd6b20;
+  --color-accent-100: #fef5e7;
+
+  /* Base Neutrals - Clean light backgrounds */
+  --color-base-100: #f7fafc;
+  --color-base-200: #edf2f7;
+  --color-base-300: #e2e8f0;
+  --color-base-content: #1a202c;
+
+  /* Status/Support */
+  --color-info: #4299e1;
+  --color-success: #38a169;
+  --color-warning: #ed8936;
+  --color-error: #e53e3e;
+  --color-muted: #718096;
+  --color-neutral: #4a5568;
+
+  /* Shadows/Glows - updated for new palette */
+  --shadow-glow-primary: 0 10px 30px rgba(90, 103, 216, 0.18);
+  --shadow-glow-secondary: 0 10px 30px rgba(72, 187, 120, 0.18);
+  --shadow-glow-accent: 0 10px 30px rgba(237, 137, 54, 0.18);
+}
+
+/* Token helper classes */
+.bg-primary-token {
+  background-color: var(--color-primary);
+}
+.text-primary-token {
+  color: var(--color-primary);
+}
+.bg-secondary-token {
+  background-color: var(--color-secondary);
+}
+.text-secondary-token {
+  color: var(--color-secondary);
+}
+.bg-accent-token {
+  background-color: var(--color-accent);
+}
+.text-accent-token {
+  color: var(--color-accent);
+}
+.bg-base-token {
+  background-color: var(--color-base-100);
+}
+.text-base-token {
+  color: var(--color-base-content);
+}
+
+/* High-contrast text on colors */
+.text-on-primary,
+.text-on-primary-token {
+  color: #ffffff;
+}
+.text-on-secondary,
+.text-on-secondary-token {
+  color: #ffffff;
+}
+.text-on-accent,
+.text-on-accent-token {
+  color: #ffffff;
+}
+.text-on-base {
+  color: var(--color-base-content);
+}
+
+.text-muted {
+  color: var(--color-muted);
+}
+.bg-muted {
+  background-color: var(--color-muted);
+}

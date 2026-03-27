@@ -32,11 +32,11 @@ const sendOtp = async (req, res) => {
       return res.status(400).json({ message: "Email or roll number required" });
     }
 
-    // Normalize input: trim and lowercase if it looks like an email
+    // Normalize input: trim and lowercase for emails, uppercase for roll numbers
     const rawInput = emailOrRollNo.trim();
     const normalized = rawInput.includes("@")
       ? rawInput.toLowerCase()
-      : rawInput;
+      : rawInput.toUpperCase();
 
     const user = await User.findOne({
       $or: [{ email: normalized }, { rollNo: normalized }],
@@ -82,11 +82,11 @@ const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email/rollNo and OTP required" });
     }
 
-    // Normalize input similar to sendOtp
+    // Normalize input similar to sendOtp: emails lowercased, roll numbers uppercased
     const rawInput = emailOrRollNo.trim();
     const normalized = rawInput.includes("@")
       ? rawInput.toLowerCase()
-      : rawInput;
+      : rawInput.toUpperCase();
 
     const user = await User.findOne({
       $or: [{ email: normalized }, { rollNo: normalized }],

@@ -58,7 +58,7 @@ const BatchDetailsModal = ({
     >
       <Icon className="w-10 h-10 mx-auto mb-3 opacity-80" />
       <div className="text-3xl font-black text-slate-900 mb-1">{value}</div>
-      <div className="text-slate-600 font-medium text-sm uppercase tracking-wide">
+      <div className="text-base-content font-medium text-sm uppercase tracking-wide">
         {label}
       </div>
     </motion.div>
@@ -82,17 +82,17 @@ const BatchDetailsModal = ({
           className="glass-card max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md rounded-t-3xl border-b border-slate-200/50 p-6">
+          <div className="sticky top-0 z-10 bg-base-100/80 backdrop-blur-md rounded-t-3xl border-b border-slate-200/50 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-2xl">
                   <BookOpen className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-black text-slate-900 line-clamp-1 max-w-md">
+                  <h2 className="text-3xl font-black text-base-content line-clamp-1 max-w-md">
                     {batch?.batchName || "Loading..."}
                   </h2>
-                  <p className="text-slate-600 text-lg mt-1">
+                  <p className="text-base-content text-lg mt-1">
                     {batch?.projectTitle || ""}
                   </p>
                 </div>
@@ -103,7 +103,7 @@ const BatchDetailsModal = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <X className="w-6 h-6 text-slate-500 group-hover:text-slate-700" />
+                <X className="w-6 h-6 text-slate-600 group-hover:text-slate-700" />
               </motion.button>
             </div>
           </div>
@@ -147,12 +147,12 @@ const BatchDetailsModal = ({
                 </div>
 
                 <div className="glass-card p-8 rounded-3xl">
-                  <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                    <Users className="w-8 h-8 text-primary-600" />
+                  <h3 className="text-2xl font-black text-base-content mb-6 flex items-center gap-3">
+                    <Users className="w-8 h-8 text-primary-token" />
                     Team Information
                   </h3>
                   <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 bg-white/50 rounded-2xl">
+                    <div className="flex items-center gap-4 p-4 bg-base-100/50 rounded-2xl">
                       <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
                         <Users className="w-7 h-7 text-white font-bold" />
                       </div>
@@ -163,7 +163,7 @@ const BatchDetailsModal = ({
                         <p className="text-2xl font-black text-slate-900">
                           {batch.teamLeaderName}
                         </p>
-                        <p className="text-slate-600">
+                        <p className="text-base-content">
                           {batch.teamLeaderEmail}
                         </p>
                       </div>
@@ -173,18 +173,18 @@ const BatchDetailsModal = ({
 
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="glass-card p-6 space-y-4">
-                    <h4 className="font-black text-xl text-slate-900">
+                    <h4 className="font-black text-xl text-base-content">
                       Project Details
                     </h4>
                     <div className="space-y-2 text-lg">
                       <div>
-                        <span className="font-semibold text-slate-600">
+                        <span className="font-semibold text-base-content">
                           Section:
                         </span>{" "}
                         {batch.section || "N/A"}
                       </div>
                       <div>
-                        <span className="font-semibold text-slate-600">
+                        <span className="font-semibold text-base-content">
                           Status:
                         </span>
                         <span
@@ -211,7 +211,7 @@ const BatchDetailsModal = ({
                         <p className="font-bold text-lg">
                           {batch.guideId?.name}
                         </p>
-                        <p className="text-slate-600">{batch.guideId?.email}</p>
+                        <p className="text-muted">{batch.guideId?.email}</p>
                       </div>
                     </div>
                   </div>

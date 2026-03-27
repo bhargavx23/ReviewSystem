@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
+@import "./styles/colors.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -33,7 +34,7 @@ body {
     Roboto,
     "Helvetica Neue",
     Arial;
-  @apply bg-white text-slate-900 antialiased;
+  @apply bg-base-100 text-base-content antialiased;
 }
 
 /* Direct Tailwind Custom Classes - No @apply DaisyUI circular deps */
@@ -54,13 +55,13 @@ body {
 }
 .custom-input-primary,
 .custom-select-primary {
-  @apply input input-bordered w-full border-slate-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 rounded-xl px-4 py-3 h-12 bg-white/90 text-slate-800;
+  @apply input input-bordered w-full border-slate-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 rounded-xl px-4 py-3 h-12 bg-base-100/90 text-base-content;
 }
 .custom-card-modern {
-  @apply bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8;
+  @apply bg-base-100/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8;
 }
 .custom-glass-card {
-  @apply bg-white/70 backdrop-blur-xl border border-slate-200/50 rounded-2xl shadow-lg p-6;
+  @apply bg-base-100/70 backdrop-blur-xl border border-slate-200/50 rounded-2xl shadow-lg p-6;
 }
 .custom-badge-primary {
   @apply inline-flex px-3 py-1 rounded-full text-sm font-semibold bg-primary-100 text-primary-800 border border-primary-200;
@@ -78,19 +79,19 @@ body {
   @apply inline-flex px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 border border-blue-200;
 }
 .custom-badge-neutral {
-  @apply inline-flex px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-800 border border-slate-200;
+  @apply inline-flex px-3 py-1 rounded-full text-sm font-semibold bg-base-200 text-base-content border border-slate-200;
 }
 .custom-dialog-overlay {
   @apply fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-8;
 }
 .custom-dialog-content {
-  @apply w-full max-w-4xl max-h-[90vh] bg-white shadow-2xl rounded-3xl overflow-hidden transform scale-100;
+  @apply w-full max-w-4xl max-h-[90vh] bg-base-100 shadow-2xl rounded-3xl overflow-hidden transform scale-100;
 }
 .custom-modal {
   @apply relative z-[9999];
 }
 .custom-modal-box {
-  @apply bg-white shadow-2xl rounded-3xl max-w-3xl max-h-[90vh] overflow-y-auto p-0 border border-slate-200 mx-auto mt-12 mb-12;
+  @apply bg-base-100 shadow-2xl rounded-3xl max-w-3xl max-h-[90vh] overflow-y-auto p-0 border border-slate-200 mx-auto mt-12 mb-12;
 }
 .custom-btn-outline-danger {
   @apply border-2 border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl;
@@ -128,7 +129,7 @@ body {
   @apply text-lg px-6 py-3 rounded-3xl shadow-md;
 }
 .badge {
-  @apply inline-flex items-center px-4 py-2 rounded-2xl bg-slate-100 text-slate-800 font-bold;
+  @apply inline-flex items-center px-4 py-2 rounded-2xl bg-base-200 text-base-content font-bold;
 }
 .glass-card {
   @apply custom-glass-card;
@@ -169,59 +170,13 @@ body {
 
 /* Subtle glow helpers used across interactive elements */
 .shadow-glow-primary {
-  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.18);
+  box-shadow: var(--shadow-glow-primary);
+}
+.shadow-glow-secondary {
+  box-shadow: var(--shadow-glow-secondary);
 }
 .shadow-glow-accent {
-  box-shadow: 0 10px 30px rgba(20, 184, 166, 0.18);
+  box-shadow: var(--shadow-glow-accent);
 }
 
-/* Ensure readable text and input contrast inside dialogs/modals (light + dark theme)
-   Scoped and minimal to avoid changing global theme tokens. */
-.dialog-content,
-.custom-dialog-content,
-.modal-box,
-.custom-modal-box,
-.custom-modal,
-.custom-dialog-overlay {
-  @apply text-slate-900;
-}
-
-[data-theme="dark"] .dialog-content,
-[data-theme="dark"] .custom-dialog-content,
-[data-theme="dark"] .modal-box,
-[data-theme="dark"] .custom-modal-box,
-[data-theme="dark"] .custom-modal,
-[data-theme="dark"] .custom-dialog-overlay {
-  @apply text-white;
-}
-
-/* Force form controls inside modals to use readable foregrounds */
-.dialog-content input,
-.dialog-content select,
-.dialog-content textarea,
-.custom-dialog-content input,
-.custom-dialog-content select,
-.custom-dialog-content textarea,
-.modal-box input,
-.modal-box select,
-.modal-box textarea,
-.custom-modal-box input,
-.custom-modal-box select,
-.custom-modal-box textarea {
-  @apply text-slate-900 placeholder-slate-400;
-}
-
-[data-theme="dark"] .dialog-content input,
-[data-theme="dark"] .custom-dialog-content input,
-[data-theme="dark"] .modal-box input,
-[data-theme="dark"] .custom-modal-box input,
-[data-theme="dark"] .dialog-content select,
-[data-theme="dark"] .custom-dialog-content select,
-[data-theme="dark"] .modal-box select,
-[data-theme="dark"] .custom-modal-box select,
-[data-theme="dark"] .dialog-content textarea,
-[data-theme="dark"] .custom-dialog-content textarea,
-[data-theme="dark"] .modal-box textarea,
-[data-theme="dark"] .custom-modal-box textarea {
-  @apply text-white placeholder-slate-400;
-}
+/* Light theme only - ensure readable text/inputs in dialogs/modals */

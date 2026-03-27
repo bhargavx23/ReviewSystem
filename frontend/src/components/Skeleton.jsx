@@ -3,7 +3,7 @@ import { cn } from "../utils/utils";
 export const Skeleton = ({ className, ...props }) => (
   <div
     className={cn(
-      "animate-pulse rounded-2xl bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700",
+      "animate-pulse rounded-2xl bg-gradient-to-r from-slate-200 via-slate-300 to-slate-200",
       className,
     )}
     {...props}

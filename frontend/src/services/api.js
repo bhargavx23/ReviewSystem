@@ -59,6 +59,7 @@ export const adminAPI = {
 export const guideAPI = {
   getBatches: () => api.get("/guide/batches"),
   getPending: () => api.get("/guide/pending-bookings"),
+  getBookings: () => api.get("/guide/bookings"),
   getBatch: (id) => api.get(`/guide/batches/${id}`),
   approveBooking: (id) => api.put(`/guide/bookings/${id}/approve`),
   rejectBooking: (id) => api.put(`/guide/bookings/${id}/reject`),

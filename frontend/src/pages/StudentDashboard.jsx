@@ -31,6 +31,7 @@ const StudentDashboard = () => {
   const [myBookings, setMyBookings] = useState([]);
   const [hasApprovedBooking, setHasApprovedBooking] = useState(false);
   const [hasExistingBooking, setHasExistingBooking] = useState(false);
+  const [hasRejectedBooking, setHasRejectedBooking] = useState(false);
   const [guideData, setGuideData] = useState({ bookings: [], settings: {} });
   const [selectedDateForSlot, setSelectedDateForSlot] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(1);
@@ -46,11 +47,24 @@ const StudentDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [myBatchRes, guideRes, allBatchesRes] = await Promise.all([
+      // Use allSettled so a 404 for my-batch doesn't prevent other data from loading
+      const results = await Promise.allSettled([
         studentAPI.getMyBatch(),
         studentAPI.getGuideBookings(),
         studentAPI.getAllBatches(),
       ]);
+
+      const myBatchRes =
+        results[0].status === "fulfilled"
+          ? results[0].value
+          : { data: { batch: null, bookings: [] } };
+      const guideRes =
+        results[1].status === "fulfilled"
+          ? results[1].value
+          : { data: { bookings: [], settings: {} } };
+      const allBatchesRes =
+        results[2].status === "fulfilled" ? results[2].value : { data: [] };
+
       const batchFromApi = myBatchRes.data?.batch || null;
       const myBookingsFromApi = myBatchRes.data?.bookings || [];
       setMyBatch(batchFromApi);
@@ -75,6 +89,9 @@ const StudentDashboard = () => {
       );
       setHasExistingBooking(
         myBookingsFromApi.some((b) => b.status && b.status !== "rejected"),
+      );
+      setHasRejectedBooking(
+        myBookingsFromApi.some((b) => b.status === "rejected"),
       );
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -162,6 +179,22 @@ const StudentDashboard = () => {
     }
   };
 
+  const handleRebookClick = () => {
+    setSelectedDateForSlot("");
+    setSelectedSlot(1);
+    setAvailableSlots([]);
+    setBookedSlotsCount(0);
+    showToast(
+      "Your previous slot was rejected — pick a new date to rebook",
+      "info",
+    );
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) {
+      // ignore when running in non-browser environments
+    }
+  };
+
   const getStatusBadge = (status) => {
     const badges = {
       approved: {
@@ -190,8 +223,8 @@ const StudentDashboard = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="w-16 h-16 animate-spin text-primary-600" />
-          <p className="text-xl font-bold text-slate-700">
+          <Loader2 className="w-16 h-16 animate-spin text-primary-token" />
+          <p className="text-xl font-bold text-base-content">
             Loading dashboard...
           </p>
         </div>
@@ -212,10 +245,10 @@ const StudentDashboard = () => {
         transition={{ delay: 0.1 }}
       >
         <div className="glass-card p-6 lg:p-10 rounded-2xl mb-8 shadow-xl">
-          <h1 className="text-4xl lg:text-5xl font-black text-slate-900 mb-4 leading-tight">
+          <h1 className="text-4xl lg:text-5xl font-black text-base-content mb-4 leading-tight">
             Student Dashboard
           </h1>
-          <p className="text-xl text-slate-600 max-w-3xl leading-relaxed">
+          <p className="text-xl text-base-content max-w-3xl leading-relaxed">
             Book your project review slots and track approval status in
             real-time. View-only access to all batches.
           </p>
@@ -230,11 +263,11 @@ const StudentDashboard = () => {
         className="glass-card rounded-3xl overflow-hidden shadow-2xl"
       >
         <div className="p-6 lg:p-8 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-primary-50">
-          <h3 className="text-3xl font-black text-slate-900 flex items-center gap-4 mb-3">
-            <BookOpen className="w-12 h-12 text-primary-600 bg-primary-100 p-3 rounded-2xl shadow-xl" />
+          <h3 className="text-3xl font-black text-base-content flex items-center gap-4 mb-3">
+            <BookOpen className="w-12 h-12 text-primary-token bg-primary-100 p-3 rounded-2xl shadow-xl" />
             All Batches Overview ({allBatches.length})
           </h3>
-          <p className="text-lg text-slate-600 opacity-90">
+          <p className="text-lg text-muted opacity-90">
             View-only • Green = Approved • Yellow = Pending • Click for details
             (no booking/editing)
           </p>
@@ -255,27 +288,29 @@ const StudentDashboard = () => {
         className="stats glass-card p-6 lg:p-8 rounded-2xl shadow-xl stats-vertical lg:stats-horizontal bg-gradient-to-r from-slate-50/50 to-primary-50/50"
       >
         <div className="stat place-items-center place-items-stretch">
-          <div className="stat-title font-bold text-slate-700">
+          <div className="stat-title font-bold text-base-content">
             Total Batches
           </div>
-          <div className="stat-value text-3xl text-primary-600">
+          <div className="stat-value text-3xl text-primary-token">
             {stats.total}
           </div>
         </div>
         <div className="stat place-items-center place-items-stretch">
-          <div className="stat-title font-bold text-slate-700">Approved</div>
-          <div className="stat-value text-3xl text-accent-600">
+          <div className="stat-title font-bold text-base-content">Approved</div>
+          <div className="stat-value text-3xl text-accent-token">
             {stats.approved}
           </div>
         </div>
         <div className="stat place-items-center place-items-stretch">
-          <div className="stat-title font-bold text-slate-700">Pending</div>
+          <div className="stat-title font-bold text-base-content">Pending</div>
           <div className="stat-value text-3xl text-amber-600">
             {stats.pending}
           </div>
         </div>
         <div className="stat place-items-center place-items-stretch">
-          <div className="stat-title font-bold text-slate-700">Remaining</div>
+          <div className="stat-title font-bold text-base-content">
+            Remaining
+          </div>
           <div className="stat-value text-3xl text-red-600">
             {stats.remaining}
           </div>
@@ -296,19 +331,19 @@ const StudentDashboard = () => {
                 <BookOpen className="w-8 h-8" />
                 {myBatch.batchName}
               </div>
-              <h2 className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-slate-900 to-primary-900 bg-clip-text text-transparent mb-8 dark:from-white dark:to-slate-200">
+              <h1 className="text-4xl lg:text-5xl font-black text-primary-token mb-8">
                 {myBatch.projectTitle}
-              </h2>
+              </h1>
               <div className="grid md:grid-cols-2 gap-8 text-lg">
-                <div className="flex items-center gap-6 p-8 bg-white/70 dark:bg-slate-800/70 rounded-3xl shadow-xl hover:shadow-2xl transition-all">
+                <div className="flex items-center gap-6 p-8 bg-base-100/70 rounded-3xl shadow-xl hover:shadow-2xl transition-all">
                   <div className="w-20 h-20 bg-gradient-to-br from-accent-400 to-accent-500 rounded-3xl flex items-center justify-center shadow-2xl">
                     <CheckCircle className="w-8 h-8 text-white shadow-lg" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-700 dark:text-slate-300 text-xl mb-2">
+                    <p className="font-bold text-base-content text-xl mb-2">
                       Assigned Guide
                     </p>
-                    <p className="text-3xl font-black text-slate-900 dark:text-white">
+                    <p className="text-3xl font-black text-base-content">
                       {myBatch.guideId?.name || "Pending Assignment"}
                     </p>
                   </div>
@@ -318,11 +353,11 @@ const StudentDashboard = () => {
           </>
         ) : (
           <div className="text-center py-24">
-            <BookOpen className="w-28 h-28 text-slate-300 mx-auto mb-8 opacity-60" />
-            <h3 className="text-4xl font-black text-slate-400 mb-6">
+            <BookOpen className="w-28 h-28 text-muted mx-auto mb-8 opacity-60" />
+            <h3 className="text-4xl font-black text-muted mb-6">
               No Batch Assigned
             </h3>
-            <p className="text-xl text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed">
+            <p className="text-xl text-muted max-w-2xl mx-auto mb-12 leading-relaxed">
               Contact administrator to assign you to a project batch before
               booking review slots.
             </p>
@@ -340,266 +375,272 @@ const StudentDashboard = () => {
       </motion.section>
 
       {/* Review Calendar */}
-      {myBatch && guideData.settings.reviewStartDate && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="glass-card rounded-3xl shadow-2xl overflow-hidden"
-        >
-          <div className="p-10 lg:p-12 border-b border-slate-200/50">
-            {hasApprovedBooking && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-gradient-to-r from-accent-500 to-accent-600 text-white p-10 rounded-3xl mb-12 shadow-2xl border-l-8 border-accent-400 mb-8"
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="glass-card rounded-3xl shadow-2xl overflow-hidden"
+      >
+        <div className="p-10 lg:p-12 border-b border-slate-200/50">
+          {hasApprovedBooking && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gradient-to-r from-accent-500 to-accent-600 text-white p-10 rounded-3xl mb-12 shadow-2xl border-l-8 border-accent-400 mb-8"
+            >
+              <div className="flex items-center gap-6 mb-4">
+                <CheckCircle className="w-20 h-20 flex-shrink-0 shadow-2xl" />
+                <div>
+                  <h4 className="text-4xl font-black mb-4 drop-shadow-lg">
+                    Slot Approved! 🎉
+                  </h4>
+                  <p className="text-2xl opacity-95 leading-relaxed">
+                    Your review slot is confirmed. Check bookings below.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          <h3 className="text-4xl font-black text-base-content flex items-center gap-6 mb-8">
+            <Calendar className="w-16 h-16 text-primary-token bg-primary-100 p-4 rounded-2xl shadow-2xl" />
+            Review Calendar • {myBatch?.guideId?.name || "Your Guide"}
+          </h3>
+          <p className="text-xl text-muted mb-8 opacity-90">
+            {hasExistingBooking
+              ? "You already have a booking (pending or approved). You cannot book another slot."
+              : hasRejectedBooking
+                ? "Your previous booking was rejected by the guide — you may book another slot."
+                : "Click dates to book slots. Colors show availability."}
+          </p>
+          {!hasExistingBooking && (
+            <div className="mb-6">
+              <button
+                className="btn btn-primary opacity-70 cursor-not-allowed text-sm"
+                disabled
               >
-                <div className="flex items-center gap-6 mb-4">
-                  <CheckCircle className="w-20 h-20 flex-shrink-0 shadow-2xl" />
-                  <div>
-                    <h4 className="text-4xl font-black mb-4 drop-shadow-lg">
-                      Slot Approved! 🎉
+                📅 Select date from calendar to book slot
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 lg:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <BookingCalendar
+                settings={guideData.settings}
+                bookings={guideData.bookings}
+                onDateSelect={hasExistingBooking ? undefined : handleDateSelect}
+                height="500px"
+                className="px-6 pb-12"
+              />
+            </div>
+            {/* Desktop booking side-panel (shows on lg and up) */}
+            <div className="md:col-span-1 order-3 lg:order-2 self-start lg:sticky lg:top-24 lg:col-span-1">
+              <aside className="p-4 md:p-6 rounded-3xl shadow-2xl bg-base-100/80 bg-purple-100 backdrop-blur-sm border border-slate-200/50">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div className="flex-1">
+                    <h4 className="text-base md:text-lg font-extrabold leading-tight">
+                      {selectedDateForSlot
+                        ? `Book: ${new Date(selectedDateForSlot).toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}`
+                        : "Pick a date on the calendar"}
                     </h4>
-                    <p className="text-2xl opacity-95 leading-relaxed">
-                      Your review slot is confirmed. Check bookings below.
+                    <p className="text-xs md:text-sm text-muted mt-1">
+                      Select slot below and confirm booking
                     </p>
                   </div>
+                  <div className="text-right hidden sm:block min-w-[80px]">
+                    <p className="text-xs text-muted">Slots/day</p>
+                    <div className="text-base md:text-lg font-bold text-primary-token">
+                      {guideData.settings?.slotsPerDay || 10}
+                    </div>
+                  </div>
                 </div>
-              </motion.div>
-            )}
 
-            <h3 className="text-4xl font-black text-slate-900 flex items-center gap-6 mb-8">
-              <Calendar className="w-16 h-16 text-primary-600 bg-primary-100 p-4 rounded-3xl shadow-2xl" />
-              Review Calendar • {myBatch.guideId?.name || "Your Guide"}
+                <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4">
+                  <div className="flex flex-col items-center text-xs md:text-sm">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-accent-500/20 flex items-center justify-center mb-1 md:mb-2">
+                      <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-accent-token" />
+                    </div>
+                    <div className="font-bold">Booked</div>
+                    <div className="text-muted">{bookedSlotsCount}</div>
+                  </div>
+                  <div className="flex flex-col items-center text-xs md:text-sm">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-amber-500/20 flex items-center justify-center mb-1 md:mb-2">
+                      <Clock className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
+                    </div>
+                    <div className="font-bold">Available</div>
+                    <div className="text-muted">{availableSlots.length}</div>
+                  </div>
+                  <div className="flex flex-col items-center text-xs md:text-sm">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary-100 flex items-center justify-center mb-1 md:mb-2">
+                      <Calendar className="w-4 h-4 md:w-5 md:h-5 text-primary-token" />
+                    </div>
+                    <div className="font-bold">Total</div>
+                    <div className="text-muted">
+                      {guideData.settings?.slotsPerDay || 10}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-3 md:mb-5 bg-white rounded-2xl p-2 md:p-4 max-h-48 md:max-h-64 overflow-auto">
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-1 md:gap-3">
+                    {(() => {
+                      const total =
+                        parseInt(guideData.settings?.slotsPerDay, 10) || 10;
+                      const dayBookings = guideData.bookings
+                        .filter(
+                          (b) =>
+                            new Date(b.date).toISOString().split("T")[0] ===
+                            selectedDateForSlot,
+                        )
+                        .map((b) => b.slotNumber);
+                      const allSlots = Array.from(
+                        { length: total },
+                        (_, i) => i + 1,
+                      );
+                      return allSlots.map((slot) => {
+                        const isBooked = dayBookings.includes(slot);
+                        const selected = selectedSlot === slot && !isBooked;
+                        return (
+                          <button
+                            key={slot}
+                            className={
+                              isBooked
+                                ? "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-slate-200 text-slate-500 cursor-not-allowed rounded-lg"
+                                : selected
+                                  ? "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-white border border-primary-300 text-primary-token shadow-md rounded-lg"
+                                  : "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-white border border-slate-200 text-slate-900 hover:scale-105 rounded-lg hover:bg-primary-50"
+                            }
+                            onClick={() => !isBooked && setSelectedSlot(slot)}
+                            disabled={isBooked}
+                          >
+                            {slot}
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 md:gap-3">
+                  <motion.button
+                    className="w-full py-2.5 md:py-3 text-sm md:text-lg rounded-lg font-black text-white bg-primary-600 hover:bg-primary-700 shadow-md disabled:opacity-60"
+                    onClick={handleBookSlot}
+                    disabled={!selectedDateForSlot || hasExistingBooking}
+                    whileHover={
+                      !selectedDateForSlot || hasExistingBooking
+                        ? {}
+                        : { scale: 1.02 }
+                    }
+                    whileTap={
+                      !selectedDateForSlot || hasExistingBooking
+                        ? {}
+                        : { scale: 0.98 }
+                    }
+                  >
+                    {hasExistingBooking
+                      ? "Booking unavailable"
+                      : `Confirm Booking ${selectedDateForSlot ? `Slot ${selectedSlot}` : ""}`}
+                  </motion.button>
+                  <button
+                    className="w-full py-2.5 md:py-3 text-sm md:text-lg rounded-lg font-bold border border-slate-200 bg-base-100/50 hover:bg-base-100/70"
+                    onClick={() => {
+                      setSelectedDateForSlot("");
+                      setSelectedSlot(1);
+                      setAvailableSlots([]);
+                      setBookedSlotsCount(0);
+                    }}
+                  >
+                    Reset Selection
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-3xl overflow-hidden shadow-2xl">
+          <div className="p-10 lg:p-12 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-primary-50">
+            <h3 className="text-3xl font-black text-base-content flex items-center gap-4 mb-4">
+              My Bookings ({myBookings.length})
             </h3>
-            <p className="text-xl text-slate-600 mb-8 opacity-90">
-              {hasExistingBooking
-                ? "You already have a booking (pending or approved). You cannot book another slot."
-                : "Click dates to book slots. Colors show availability."}
-            </p>
-            {!hasExistingBooking && (
-              <div className="mb-6">
-                <button
-                  className="btn btn-primary opacity-70 cursor-not-allowed text-sm"
-                  disabled
-                >
-                  📅 Select date from calendar to book slot
-                </button>
-              </div>
+            {myBookings.length === 0 && (
+              <p className="text-xl text-base-content">
+                Book your first slot using calendar above!
+              </p>
             )}
           </div>
-
-          <div className="p-6 lg:p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <BookingCalendar
-                  settings={guideData.settings}
-                  bookings={guideData.bookings}
-                  onDateSelect={
-                    hasExistingBooking ? undefined : handleDateSelect
-                  }
-                  height="500px"
-                  className="px-6 pb-12"
-                />
-              </div>
-              {/* Desktop booking side-panel (shows on lg and up) */}
-              <div className="md:col-span-1 order-3 lg:order-2 self-start lg:sticky lg:top-24 lg:col-span-1">
-                <aside className="p-4 md:p-6 rounded-3xl shadow-2xl bg-white/80 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/50">
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex-1">
-                      <h4 className="text-base md:text-lg font-extrabold leading-tight">
-                        {selectedDateForSlot
-                          ? `Book: ${new Date(selectedDateForSlot).toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}`
-                          : "Pick a date on the calendar"}
+          {myBookings.length === 0 ? (
+            <div className="p-20 text-center">
+              <Calendar className="w-28 h-28 text-muted mx-auto mb-12 opacity-60" />
+              <h4 className="text-4xl font-black text-base-content mb-6">
+                No Bookings Yet
+              </h4>
+              <p className="text-2xl text-base-content max-w-2xl mx-auto leading-relaxed">
+                Use calendar above to schedule your project review slot and
+                track approval status here.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-12">
+              {myBookings.map((booking) => {
+                const status = getStatusBadge(booking.status);
+                const Icon = status.icon;
+                return (
+                  <motion.div
+                    key={booking._id}
+                    className="glass-card p-8 rounded-2xl hover:shadow-xl group cursor-pointer border-l-8 border-primary-500 shadow-2xl"
+                    whileHover={{ y: -8, scale: 1.02 }}
+                  >
+                    <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/50">
+                      <div
+                        className={`p-3 rounded-2xl ${status.className.replace("badge-", "bg-")}`}
+                      >
+                        <Icon className="w-8 h-8 shadow-lg" />
+                      </div>
+                      <span
+                        className={`badge font-bold text-lg px-6 py-3 shadow-md ${status.className}`}
+                      >
+                        {status.label.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="space-y-4">
+                      <h4 className="text-3xl font-black text-base-content">
+                        Slot {booking.slotNumber}
                       </h4>
-                      <p className="text-xs md:text-sm text-slate-500 mt-1">
-                        Select slot below and confirm booking
+                      <p className="text-2xl font-mono text-base-content">
+                        {new Date(booking.date).toLocaleDateString("en-IN", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
                       </p>
                     </div>
-                    <div className="text-right hidden sm:block min-w-[80px]">
-                      <p className="text-xs text-slate-500">Slots/day</p>
-                      <div className="text-base md:text-lg font-bold text-primary-600">
-                        {guideData.settings?.slotsPerDay || 10}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4">
-                    <div className="flex flex-col items-center text-xs md:text-sm">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-accent-500/20 flex items-center justify-center mb-1 md:mb-2">
-                        <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-accent-500" />
-                      </div>
-                      <div className="font-bold">Booked</div>
-                      <div className="text-slate-500">{bookedSlotsCount}</div>
-                    </div>
-                    <div className="flex flex-col items-center text-xs md:text-sm">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-amber-500/20 flex items-center justify-center mb-1 md:mb-2">
-                        <Clock className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
-                      </div>
-                      <div className="font-bold">Available</div>
-                      <div className="text-slate-500">
-                        {availableSlots.length}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center text-xs md:text-sm">
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary-100 flex items-center justify-center mb-1 md:mb-2">
-                        <Calendar className="w-4 h-4 md:w-5 md:h-5 text-primary-600" />
-                      </div>
-                      <div className="font-bold">Total</div>
-                      <div className="text-slate-500">
-                        {guideData.settings?.slotsPerDay || 10}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mb-3 md:mb-5 bg-slate-50/70 dark:bg-slate-900/30 rounded-2xl p-2 md:p-4 max-h-48 md:max-h-64 overflow-auto">
-                    <div className="grid grid-cols-3 md:grid-cols-5 gap-1 md:gap-3">
-                      {(() => {
-                        const total =
-                          parseInt(guideData.settings?.slotsPerDay, 10) || 10;
-                        const dayBookings = guideData.bookings
-                          .filter(
-                            (b) =>
-                              new Date(b.date).toISOString().split("T")[0] ===
-                              selectedDateForSlot,
-                          )
-                          .map((b) => b.slotNumber);
-                        const allSlots = Array.from(
-                          { length: total },
-                          (_, i) => i + 1,
-                        );
-                        return allSlots.map((slot) => {
-                          const isBooked = dayBookings.includes(slot);
-                          const selected = selectedSlot === slot && !isBooked;
-                          return (
-                            <button
-                              key={slot}
-                              className={
-                                isBooked
-                                  ? "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-slate-200 text-slate-500 cursor-not-allowed rounded-lg"
-                                  : selected
-                                    ? "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg ring-2 md:ring-4 ring-primary-200/30 rounded-lg"
-                                    : "flex items-center justify-center py-2 px-1 md:py-3 md:px-2 text-base md:text-lg font-bold transition-transform bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:scale-105 rounded-lg hover:bg-primary-50"
-                              }
-                              onClick={() => !isBooked && setSelectedSlot(slot)}
-                              disabled={isBooked}
-                            >
-                              {slot}
-                            </button>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 md:gap-3">
-                    <motion.button
-                      className="w-full py-2.5 md:py-3 text-sm md:text-lg rounded-lg font-black text-white bg-primary-600 hover:bg-primary-700 shadow-md disabled:opacity-60"
-                      onClick={handleBookSlot}
-                      disabled={!selectedDateForSlot || hasExistingBooking}
-                      whileHover={
-                        !selectedDateForSlot || hasExistingBooking
-                          ? {}
-                          : { scale: 1.02 }
-                      }
-                      whileTap={
-                        !selectedDateForSlot || hasExistingBooking
-                          ? {}
-                          : { scale: 0.98 }
-                      }
-                    >
-                      {hasExistingBooking
-                        ? "Booking unavailable"
-                        : `Confirm Booking ${selectedDateForSlot ? `Slot ${selectedSlot}` : ""}`}
-                    </motion.button>
-                    <button
-                      className="w-full py-2.5 md:py-3 text-sm md:text-lg rounded-lg font-bold border border-slate-200 bg-white/50 hover:bg-white/70 dark:bg-slate-800/50 dark:hover:bg-slate-800/70"
-                      onClick={() => {
-                        setSelectedDateForSlot("");
-                        setSelectedSlot(1);
-                        setAvailableSlots([]);
-                        setBookedSlotsCount(0);
-                      }}
-                    >
-                      Reset Selection
-                    </button>
-                  </div>
-                </aside>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card rounded-3xl overflow-hidden shadow-2xl">
-            <div className="p-10 lg:p-12 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-primary-50">
-              <h3 className="text-3xl font-black text-slate-900 flex items-center gap-4 mb-4">
-                My Bookings ({myBookings.length})
-              </h3>
-              {myBookings.length === 0 && (
-                <p className="text-xl text-slate-600">
-                  Book your first slot using calendar above!
-                </p>
-              )}
-            </div>
-            {myBookings.length === 0 ? (
-              <div className="p-20 text-center">
-                <Calendar className="w-28 h-28 text-slate-300 mx-auto mb-12 opacity-60" />
-                <h4 className="text-4xl font-black text-slate-500 mb-6">
-                  No Bookings Yet
-                </h4>
-                <p className="text-2xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
-                  Use calendar above to schedule your project review slot and
-                  track approval status here.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-12">
-                {myBookings.map((booking) => {
-                  const status = getStatusBadge(booking.status);
-                  const Icon = status.icon;
-                  return (
-                    <motion.div
-                      key={booking._id}
-                      className="glass-card p-8 rounded-2xl hover:shadow-xl group cursor-pointer border-l-8 border-primary-500 shadow-2xl"
-                      whileHover={{ y: -8, scale: 1.02 }}
-                    >
-                      <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/50">
-                        <div
-                          className={`p-3 rounded-2xl ${status.className.replace("badge-", "bg-")}`}
-                        >
-                          <Icon className="w-8 h-8 shadow-lg" />
+                    <div className="mt-8 pt-8 border-t border-slate-200/50">
+                      <p className="text-base-content text-lg group-hover:text-base-content transition-colors">
+                        {booking.batchId?.batchName || "Batch"}
+                      </p>
+                      {booking.status === "rejected" && (
+                        <div className="mt-4">
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={handleRebookClick}
+                          >
+                            Book New Slot
+                          </button>
                         </div>
-                        <span
-                          className={`badge font-bold text-lg px-6 py-3 shadow-md ${status.className}`}
-                        >
-                          {status.label.toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="space-y-4">
-                        <h4 className="text-3xl font-black text-slate-900">
-                          Slot {booking.slotNumber}
-                        </h4>
-                        <p className="text-2xl font-mono text-primary-600">
-                          {new Date(booking.date).toLocaleDateString("en-IN", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </p>
-                      </div>
-                      <div className="mt-8 pt-8 border-t border-slate-200/50">
-                        <p className="text-slate-600 text-lg group-hover:text-slate-800 transition-colors">
-                          {booking.batchId?.batchName || "Batch"}
-                        </p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </motion.section>
-      )}
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </motion.section>
 
       {selectedBatchModal && (
         <BatchDetailsModal

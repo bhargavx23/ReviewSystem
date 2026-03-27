@@ -1,4 +1,5 @@
 import React from "react";
+// FullCalendar CSS loaded via CDN in public/index.html to avoid package export issues
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -16,13 +17,13 @@ const BookingCalendar = ({
   const getEventColor = (status) => {
     switch (status) {
       case "approved":
-        return "#10b981";
+        return "var(--color-success)";
       case "pending":
-        return "#f59e0b";
+        return "var(--color-warning)";
       case "rejected":
-        return "#ef4444";
+        return "var(--color-error)";
       default:
-        return "#6b7280";
+        return "var(--color-muted)";
     }
   };
 
@@ -81,10 +82,10 @@ const BookingCalendar = ({
 
     return (
       <div className="w-full h-full flex flex-col items-start justify-start p-2">
-        <div className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+        <div className="text-xs font-semibold text-gray-700">
           {dayCellInfo.dayNumberText}
         </div>
-        <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-mono">
+        <div className="text-[11px] text-gray-500 mt-1 font-mono">
           {bookedCount}/{remaining}
         </div>
       </div>
@@ -107,11 +108,9 @@ const BookingCalendar = ({
       className={className}
     >
       <div className="glass-card rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
-        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-200/50 dark:border-gray-700/50">
+        <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-200/50">
           <CalendarIcon className="w-8 h-8 text-primary" />
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-            Review Calendar
-          </h3>
+          <h3 className="text-xl font-bold text-gray-900">Review Calendar</h3>
         </div>
 
         <FullCalendar
@@ -180,24 +179,18 @@ const BookingCalendar = ({
       </div>
 
       {/* Legend */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-8 border-t-2 border-gray-200/60 dark:border-gray-700/60 rounded-t-2xl bg-gradient-to-r from-gray-50/70 to-primary-50/70 dark:from-slate-900/50 dark:to-slate-800/50 p-6">
-        <div className="flex items-center gap-3 p-3 bg-accent-500/10 rounded-2xl border border-accent-200/50 dark:border-accent-400/50">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-8 border-t-2 border-gray-200/60 rounded-t-2xl bg-gradient-to-r from-gray-50/70 to-primary-50/70 p-6">
+        <div className="flex items-center gap-3 p-3 bg-accent-500/10 rounded-2xl border border-accent-200/50">
           <div className="w-5 h-5 bg-accent-500 rounded-lg shadow-md" />
-          <span className="text-sm font-bold text-accent-900 dark:text-accent-300">
-            Approved
-          </span>
+          <span className="text-sm font-bold text-accent-900">Approved</span>
         </div>
-        <div className="flex items-center gap-3 p-3 bg-amber-500/10 rounded-2xl border border-amber-200/50 dark:border-amber-400/50">
+        <div className="flex items-center gap-3 p-3 bg-amber-500/10 rounded-2xl border border-amber-200/50">
           <div className="w-5 h-5 bg-amber-500 rounded-lg shadow-md" />
-          <span className="text-sm font-bold text-amber-900 dark:text-amber-300">
-            Pending
-          </span>
+          <span className="text-sm font-bold text-amber-900">Pending</span>
         </div>
-        <div className="flex items-center gap-3 p-3 bg-red-500/10 rounded-2xl border border-red-200/50 dark:border-red-400/50">
+        <div className="flex items-center gap-3 p-3 bg-red-500/10 rounded-2xl border border-red-200/50">
           <div className="w-5 h-5 bg-red-500 rounded-lg shadow-md" />
-          <span className="text-sm font-bold text-red-900 dark:text-red-300">
-            Rejected
-          </span>
+          <span className="text-sm font-bold text-red-900">Rejected</span>
         </div>
         <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-2xl border border-primary/50 cursor-pointer hover:bg-primary/20 transition-all">
           <div className="w-5 h-5 bg-primary rounded-lg shadow-md" />

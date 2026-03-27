@@ -282,17 +282,17 @@ const AdminDashboard = () => {
 
           {/* Action Cards Skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8">
+            <div className="bg-base-100/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8">
               <Skeleton className="w-16 h-16 rounded-2xl mb-4" />
               <Skeleton className="h-8 w-48 mb-2" />
               <Skeleton className="h-6 w-32" />
             </div>
-            <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8">
+            <div className="bg-base-100/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8">
               <Skeleton className="w-16 h-16 rounded-2xl mb-4" />
               <Skeleton className="h-8 w-48 mb-2" />
               <Skeleton className="h-6 w-32" />
             </div>
-            <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8">
+            <div className="bg-base-100/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8">
               <Skeleton className="w-16 h-16 rounded-2xl mb-4" />
               <Skeleton className="h-8 w-48 mb-2" />
               <Skeleton className="h-6 w-32" />
@@ -300,7 +300,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Table Skeleton */}
-          <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl overflow-hidden">
+          <div className="bg-base-100/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl overflow-hidden">
             <div className="p-8 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-primary-50">
               <Skeleton className="h-12 w-64 rounded-xl" />
             </div>
@@ -328,10 +328,10 @@ const AdminDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16 fade-in-up"
         >
-          <h1 className="text-4xl lg:text-5xl font-black text-slate-900 mb-4">
+          <h1 className="text-4xl lg:text-5xl font-black text-base-content mb-4">
             Admin Dashboard
           </h1>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-base-content max-w-3xl mx-auto leading-relaxed">
             Complete control over users, batches, and review slot bookings with
             real-time analytics
           </p>
@@ -354,7 +354,7 @@ const AdminDashboard = () => {
             return (
               <motion.div
                 key={stat.label}
-                className="bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8 group hover:shadow-2xl transition-all"
+                className="bg-base-100/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8 group hover:shadow-2xl transition-all"
                 whileHover={{ y: -8 }}
               >
                 <div className="flex items-center justify-between mb-6">
@@ -364,10 +364,10 @@ const AdminDashboard = () => {
                     <Icon className="w-10 h-10 text-white drop-shadow-md" />
                   </div>
                 </div>
-                <p className="text-slate-600 font-semibold text-lg mb-2">
+                <p className="text-base-content font-semibold text-lg mb-2">
                   {stat.label}
                 </p>
-                <p className="text-3xl font-black text-slate-900">
+                <p className="text-3xl font-black text-base-content">
                   {stat.value}
                 </p>
               </motion.div>
@@ -387,10 +387,10 @@ const AdminDashboard = () => {
                 <UserPlus className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-slate-900 mb-2">
+                <h3 className="text-2xl font-black text-base-content mb-2">
                   Create User
                 </h3>
-                <p className="text-slate-600 text-lg">
+                <p className="text-base-content text-lg">
                   Add students, guides, admins
                 </p>
               </div>
@@ -409,10 +409,12 @@ const AdminDashboard = () => {
                 <BookOpen className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-slate-900 mb-2">
+                <h3 className="text-2xl font-black text-base-content mb-2">
                   Create Batch
                 </h3>
-                <p className="text-slate-600 text-lg">Manage project groups</p>
+                <p className="text-base-content text-lg">
+                  Manage project groups
+                </p>
               </div>
             </div>
             <button
@@ -429,10 +431,10 @@ const AdminDashboard = () => {
                 <SettingsIcon className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-slate-900 mb-2">
+                <h3 className="text-2xl font-black text-base-content mb-2">
                   Review Settings
                 </h3>
-                <p className="text-slate-600 text-lg">
+                <p className="text-base-content text-lg">
                   {settingsData.reviewStartDate
                     ? `${new Date(settingsData.reviewStartDate).toLocaleDateString()} - ${new Date(settingsData.reviewEndDate).toLocaleDateString()}`
                     : "Set date range"}
@@ -456,12 +458,12 @@ const AdminDashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8 mb-12">
+          <div className="bg-base-100/80 backdrop-blur-xl border border-slate-200/50 shadow-xl rounded-3xl p-8 mb-12">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
-                <BookOpen className="w-12 h-12 text-primary-600 bg-primary-100 p-4 rounded-2xl shadow-lg" />
+                <BookOpen className="w-12 h-12 text-primary-token bg-primary-100 p-4 rounded-2xl shadow-lg" />
                 <div>
-                  <h3 className="text-3xl font-black text-slate-900">
+                  <h3 className="text-3xl font-black text-base-content">
                     {tabView === "batches"
                       ? `Batches (${batches.length})`
                       : `Guides (${guides.length})`}
@@ -473,7 +475,7 @@ const AdminDashboard = () => {
                         "px-4 py-2 rounded-l-xl border border-slate-200",
                         tabView === "batches"
                           ? "bg-primary-50 font-bold"
-                          : "bg-white",
+                          : "bg-base-100",
                       )}
                     >
                       Batches
@@ -484,7 +486,7 @@ const AdminDashboard = () => {
                         "px-4 py-2 rounded-r-xl border border-slate-200 ml-1",
                         tabView === "guides"
                           ? "bg-primary-50 font-bold"
-                          : "bg-white",
+                          : "bg-base-100",
                       )}
                     >
                       Guides
@@ -581,36 +583,36 @@ const AdminDashboard = () => {
                 ? batches.map((batch) => (
                     <motion.div
                       key={batch._id}
-                      className="bg-white border border-slate-100 p-5 flex flex-col items-center shadow-lg rounded-2xl hover:shadow-xl transition-all"
+                      className="bg-base-100 border border-slate-100 p-5 flex flex-col items-center shadow-lg rounded-2xl hover:shadow-xl transition-all"
                       whileHover={{ y: -4 }}
                     >
-                      <h4 className="text-2xl font-bold text-slate-900 mb-4">
+                      <h4 className="text-2xl font-bold text-base-content mb-4">
                         {batch.batchName}{" "}
                         {batch.section ? `(${batch.section})` : ""}
                       </h4>
-                      <p className="text-slate-600 mb-4 text-lg">
+                      <p className="text-base-content mb-4 text-lg">
                         {batch.projectTitle}
                       </p>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2">
-                          <Users className="w-5 h-5 text-slate-500" />
-                          <span className="font-semibold text-slate-800">
+                          <Users className="w-5 h-5 text-primary-token" />
+                          <span className="font-semibold text-primary-token">
                             {batch.teamLeaderName}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 text-slate-500">📧</span>
+                          <span className="w-5 h-5 text-slate-600">📧</span>
                           <span>{batch.teamLeaderEmail}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 text-slate-500">🆔</span>
+                          <span className="w-5 h-5 text-slate-600">🆔</span>
                           <span className="font-mono">
                             {batch.teamLeaderRollNo}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 pt-4 mt-6 border-t border-slate-200">
-                          <Users2 className="w-5 h-5 text-primary-600" />
-                          <span className="font-semibold text-primary-700">
+                          <Users2 className="w-5 h-5 text-primary-token" />
+                          <span className="font-semibold text-primary-token">
                             {batch.guideId?.name || "No Guide"}
                           </span>
                         </div>
@@ -634,11 +636,11 @@ const AdminDashboard = () => {
                 : guides.map((g) => (
                     <div
                       key={g._id}
-                      className="bg-white border border-slate-100 shadow-lg rounded-2xl p-6"
+                      className="bg-base-100 border border-slate-100 shadow-lg rounded-2xl p-6"
                     >
                       <h4 className="text-xl font-bold">{g.name}</h4>
-                      <p className="text-sm text-slate-600">{g.email}</p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-base-content">{g.email}</p>
+                      <p className="text-sm text-base-content">
                         Guides are displayed read-only here.
                       </p>
                     </div>
@@ -656,13 +658,13 @@ const AdminDashboard = () => {
           <div className="p-8 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-primary-50">
             <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
               <h3 className="text-3xl font-black text-slate-900 flex items-center gap-4">
-                <Calendar className="w-12 h-12 text-primary-600 bg-primary-100 p-3 rounded-2xl shadow-lg" />{" "}
+                <Calendar className="w-12 h-12 text-primary-token bg-primary-100 p-3 rounded-2xl shadow-lg" />{" "}
                 All Bookings ({filteredBookings.length})
               </h3>
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="select-primary max-w-xs bg-white border-slate-300 shadow-md text-slate-700"
+                className="select-primary max-w-xs bg-base-100 border-slate-300 shadow-md text-base-content"
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
@@ -675,10 +677,10 @@ const AdminDashboard = () => {
           {filteredBookings.length === 0 ? (
             <div className="p-20 text-center">
               <Calendar className="w-24 h-24 text-slate-300 mx-auto mb-8 opacity-50" />
-              <h4 className="text-3xl font-bold text-slate-500 mb-4">
+              <h4 className="text-3xl font-bold text-base-content mb-4">
                 No bookings match filter
               </h4>
-              <p className="text-xl text-slate-500 max-w-lg mx-auto">
+              <p className="text-xl text-base-content max-w-lg mx-auto">
                 Adjust filters or create some test bookings to see the magic ✨
               </p>
             </div>
@@ -693,7 +695,7 @@ const AdminDashboard = () => {
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-6">
                     <div className="space-y-1">
-                      <label className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                      <label className="text-sm font-semibold text-base-content uppercase tracking-wide">
                         Student
                       </label>
                       <p className="font-bold text-xl text-slate-900">
@@ -701,7 +703,7 @@ const AdminDashboard = () => {
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                      <label className="text-sm font-semibold text-base-content uppercase tracking-wide">
                         Batch
                       </label>
                       <span className="inline-block badge-primary font-bold px-6 py-3 rounded-2xl shadow-lg">
@@ -709,11 +711,11 @@ const AdminDashboard = () => {
                       </span>
                     </div>
                     <div className="space-y-1 lg:col-span-2">
-                      <label className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                      <label className="text-sm font-semibold text-base-content uppercase tracking-wide">
                         Date & Slot
                       </label>
                       <div className="flex items-center gap-6">
-                        <span className="font-mono text-2xl font-black text-primary-600 bg-primary-50 px-4 py-2 rounded-2xl shadow-md">
+                        <span className="font-mono text-2xl font-black text-base-content bg-primary-50 px-4 py-2 rounded-2xl shadow-md">
                           {new Date(booking.date).toLocaleDateString()}
                         </span>
                         <span className="badge badge-info text-xl font-bold px-6 py-3 shadow-lg">
@@ -759,9 +761,10 @@ const AdminDashboard = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleDeleteBooking(booking._id)}
-                        className="btn btn-outline btn-danger px-8 py-4 text-lg font-black gap-3 shadow-xl flex items-center justify-center h-full flex-1 sm:flex-none min-h-[56px]"
+                        className="px-8 py-4 bg-red-600 rounded-full text-white gap-3 shadow-xl flex items-center justify-center h-full flex-1 sm:flex-none min-h-[56px]"
                       >
-                        <Trash2 className="w-6 h-6" /> Delete
+                        <Trash2 className="w-6 h-6 text-white" />
+                        <span className="font-semibold">Delete</span>
                       </motion.button>
                     </div>
                   </div>
@@ -785,10 +788,10 @@ const AdminDashboard = () => {
                     <UserPlus className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-slate-900">
+                    <h2 className="text-2xl font-black text-base-content">
                       Create New User
                     </h2>
-                    <p className="text-slate-600 mt-1">
+                    <p className="text-base-content mt-1">
                       Add students, guides, or admins to the system
                     </p>
                   </div>
@@ -797,7 +800,7 @@ const AdminDashboard = () => {
               <div className="p-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <label className="block text-sm font-bold text-base-content mb-3">
                       Full Name *
                     </label>
                     <input
@@ -814,7 +817,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <label className="block text-sm font-bold text-base-content mb-3">
                       Email *
                     </label>
                     <input
@@ -832,7 +835,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                  <label className="block text-sm font-bold text-base-content mb-3">
                     Roll Number *
                   </label>
                   <input
@@ -849,7 +852,7 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                  <label className="block text-sm font-bold text-base-content mb-3">
                     Role *
                   </label>
                   <select
@@ -919,7 +922,7 @@ const AdminDashboard = () => {
               <div className="p-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <label className="block text-sm font-bold text-base-content mb-3">
                       Batch Name *
                     </label>
                     <input
@@ -936,7 +939,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <label className="block text-sm font-bold text-base-content mb-3">
                       Section
                     </label>
                     <input
@@ -954,7 +957,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                  <label className="block text-sm font-bold text-base-content mb-3">
                     Project Title *
                   </label>
                   <input
@@ -971,7 +974,7 @@ const AdminDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                  <label className="block text-sm font-bold text-base-content mb-3">
                     Assign Guide *
                   </label>
                   <select
@@ -994,7 +997,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <label className="block text-sm font-bold text-base-content mb-3">
                       Team Leader Name *
                     </label>
                     <input
@@ -1011,7 +1014,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <label className="block text-sm font-bold text-base-content mb-3">
                       Team Leader Email *
                     </label>
                     <input
@@ -1028,7 +1031,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <label className="block text-sm font-bold text-base-content mb-3">
                       Team Leader Roll No *
                     </label>
                     <input
@@ -1098,7 +1101,7 @@ const AdminDashboard = () => {
               <div className="p-8 space-y-8">
                 <div className="space-y-4">
                   <label className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <span className="text-sm font-bold text-slate-700 sm:w-36">
+                    <span className="text-sm font-bold text-base-content sm:w-36">
                       Start Date *
                     </span>
                     <input
@@ -1123,7 +1126,7 @@ const AdminDashboard = () => {
                   </label>
                   {settingsData.reviewStartDate &&
                     settingsData.reviewEndDate && (
-                      <p className="text-sm text-primary-600 font-semibold sm:ml-36 ml-0">
+                      <p className="text-sm text-base-content font-semibold sm:ml-36 ml-0">
                         Preview:{" "}
                         {new Date(
                           settingsData.reviewStartDate,
@@ -1138,7 +1141,7 @@ const AdminDashboard = () => {
 
                 <div className="space-y-4">
                   <label className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <span className="text-sm font-bold text-slate-700 sm:w-36">
+                    <span className="text-sm font-bold text-base-content sm:w-36">
                       End Date *
                     </span>
                     <input
@@ -1165,7 +1168,7 @@ const AdminDashboard = () => {
 
                 <div className="space-y-4">
                   <label className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <span className="text-sm font-bold text-slate-700 sm:w-36">
+                    <span className="text-sm font-bold text-base-content sm:w-36">
                       Slots per Day
                     </span>
                     <input

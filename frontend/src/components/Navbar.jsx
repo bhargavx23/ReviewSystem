@@ -1,15 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  Menu,
-  X,
-  User,
-  LogOut,
-  Sun,
-  Moon,
-  ChevronDown,
-  Calendar,
-} from "lucide-react";
+import { Menu, X, User, LogOut, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { showToast } from "./Toaster";
 import { cn } from "../utils/utils";
@@ -54,14 +45,12 @@ const Navbar = () => {
       {/* Desktop Navbar */}
       <div className="hidden lg:flex px-4 py-3 items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg flex items-center justify-center hover:scale-105 transition-transform duration-200">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg flex items-center justify-center hover:scale-105 transition-transform duration-200 bg-primary-token">
             <Calendar className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">
-              ReviewSlot
-            </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+            <h1 className="text-lg font-bold text-primary-token">ReviewSlot</h1>
+            <p className="text-xs text-white font-medium">
               Slot Booking System
             </p>
           </div>
@@ -70,8 +59,12 @@ const Navbar = () => {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2 text-sm">
             <User className="w-5 h-5" />
-            <span>
-              {userName} ({role.toUpperCase()})
+            <span className="text-sm font-medium text-base-content">
+              {userName} (
+              <span className="uppercase text-xs text-base-content/70">
+                {role.toUpperCase()}
+              </span>
+              )
             </span>
           </div>
 
@@ -83,7 +76,7 @@ const Navbar = () => {
                 "px-6 py-2 rounded-xl font-semibold transition-all duration-200 transform-hover",
                 isActive(item.path)
                   ? "bg-primary/20 text-primary shadow-md"
-                  : "text-base-content/70 hover:bg-base-200 dark:hover:bg-base-800",
+                  : "text-base-content/70 hover:bg-base-200",
               )}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
@@ -108,12 +101,14 @@ const Navbar = () => {
       <div className="lg:hidden">
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center space-x-2">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg flex items-center justify-center">
+            <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg flex items-center justify-center bg-primary-token">
               <Calendar className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-lg gradient-text">ReviewSlot</h2>
-              <p className="text-xs opacity-75">{userName}</p>
+              <h2 className="font-bold text-lg text-primary-token">
+                ReviewSlot
+              </h2>
+              <p className="text-xs opacity-75 text-base-content">{userName}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -149,8 +144,8 @@ const Navbar = () => {
                     className={cn(
                       "w-full text-left p-4 rounded-xl transition-all flex items-center gap-3",
                       isActive(item.path)
-                        ? "bg-primary text-primary font-semibold"
-                        : "hover:bg-base-200 dark:hover:bg-base-800",
+                        ? "bg-primary/20 text-primary font-semibold"
+                        : "hover:bg-base-200",
                     )}
                     whileTap={{ scale: 0.98 }}
                   >

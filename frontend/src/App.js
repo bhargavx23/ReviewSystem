@@ -12,7 +12,7 @@ import Toaster from "./components/Toaster";
 import Navbar from "./components/Navbar";
 
 import Login from "./pages/Login";
-import { Sun, Moon } from "lucide-react";
+// Removed theme icons; app is light-only now
 
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const GuideDashboard = lazy(() => import("./pages/GuideDashboard"));
@@ -51,7 +51,7 @@ function AppContent() {
   const isAuthenticated = !!localStorage.getItem("token");
 
   return (
-    <div className="min-h-screen bg-white transition-all duration-300">
+    <div className="min-h-screen bg-base-100 transition-all duration-300">
       {isAuthenticated && <Navbar />}
       <main className="container mx-auto px-4 py-6 max-w-6xl">
         <AnimatePresence mode="wait">

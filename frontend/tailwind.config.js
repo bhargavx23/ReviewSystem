@@ -3,7 +3,7 @@ const colors = require("tailwindcss/colors");
 
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  darkMode: "class",
+  darkMode: false,
   theme: {
     extend: {
       fontFamily: {
@@ -62,8 +62,39 @@ module.exports = {
   },
   plugins: [require("daisyui")],
   daisyui: {
-    themes: ["slate", "dark", "light"],
-    darkTheme: "dark",
+    themes: [
+      {
+        modern: {
+          primary: "#5A67D8",
+          "primary-focus": "#4C51BF",
+          "primary-content": "#ffffff",
+
+          secondary: "#48BB78",
+          "secondary-focus": "#38A169",
+          "secondary-content": "#ffffff",
+
+          accent: "#ED8936",
+          "accent-focus": "#DD6B20",
+          "accent-content": "#ffffff",
+
+          neutral: "#4A5568",
+          "neutral-focus": "#2D3748",
+          "neutral-content": "#ffffff",
+
+          "base-100": "#F7FAFC",
+          "base-200": "#EDF2F7",
+          "base-300": "#E2E8F0",
+          "base-content": "#1A202C",
+
+          info: "#4299E1",
+          success: "#38A169",
+          warning: "#ED8936",
+          error: "#E53E3E",
+        },
+      },
+      "light",
+    ],
+    darkTheme: false,
     base: true,
     utils: true,
     logs: false,

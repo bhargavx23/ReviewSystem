@@ -15,8 +15,9 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    const normalizedRoll = rollNo.trim().toUpperCase();
     const existingUser = await User.findOne({
-      $or: [{ email: email.trim().toLowerCase() }, { rollNo: rollNo.trim() }],
+      $or: [{ email: email.trim().toLowerCase() }, { rollNo: normalizedRoll }],
     });
 
     if (existingUser) {
@@ -28,7 +29,7 @@ const createUser = async (req, res) => {
     const user = new User({
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      rollNo: rollNo.trim(),
+      rollNo: normalizedRoll,
       role,
       isActive: true,
     });
@@ -90,7 +91,7 @@ const createBatch = async (req, res) => {
       projectTitle: projectTitle.trim(),
       teamLeaderName: teamLeaderName.trim(),
       teamLeaderEmail: teamLeaderEmail.trim().toLowerCase(),
-      teamLeaderRollNo: teamLeaderRollNo?.trim() || "",
+      teamLeaderRollNo: teamLeaderRollNo?.trim().toUpperCase() || "",
       guideId: guide._id,
       section: section?.trim() || "",
       isActive: true,
@@ -111,9 +112,7 @@ const createBatch = async (req, res) => {
     if (!existingTeamLeader) {
       // If roll number provided, ensure it's not already used by someone else
       if (batchData.teamLeaderRollNo) {
-        const rollConflict = await User.findOne({
-          rollNo: batchData.teamLeaderRollNo,
-        });
+        const rollConflict = await User.findOne({ rollNo: batchData.teamLeaderRollNo });
         if (rollConflict) {
           return res
             .status(400)
@@ -276,7 +275,7 @@ const updateBatch = async (req, res) => {
     if (teamLeaderEmail)
       update.teamLeaderEmail = teamLeaderEmail.trim().toLowerCase();
     if (teamLeaderRollNo !== undefined)
-      update.teamLeaderRollNo = teamLeaderRollNo?.trim() || "";
+      update.teamLeaderRollNo = teamLeaderRollNo?.trim().toUpperCase() || "";
     if (guideId !== undefined) update.guideId = guideId || null;
     if (section !== undefined) update.section = section?.trim() || "";
 

@@ -38,10 +38,11 @@ export function exportCSV(filename, headers = [], rows = []) {
 function buildHTMLTable(title, headers = [], rows = []) {
   const styles = `
     <style>
-      body{font-family: Arial, Helvetica, sans-serif; color:#111}
+      /* Use app CSS variables so exported HTML matches the app palette when opened in-app */
+      body{font-family: Arial, Helvetica, sans-serif; color:var(--color-base-content, #111)}
       table{border-collapse:collapse;width:100%}
-      th,td{border:1px solid #ddd;padding:8px;text-align:left}
-      th{background:#f4f4f7;font-weight:700}
+      th,td{border:1px solid var(--color-base-300, #ddd);padding:8px;text-align:left}
+      th{background:var(--color-base-200, #f4f4f7);font-weight:700}
       h1{font-size:20px}
     </style>`;
 

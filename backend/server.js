@@ -12,12 +12,26 @@ const app = express();
 
 // Middleware
 app.use(helmet());
+// Configure CORS to allow frontend origins. Supports comma-separated
+// FRONTEND_URL (e.g. "http://localhost:3000,http://localhost:3002")
+const frontendEnv = process.env.FRONTEND_URL || "http://localhost:3000,http://localhost:3002";
+const allowedOrigins = frontendEnv.split(",").map((s) => s.trim());
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+      // Allow non-browser requests (e.g., curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      }
+      return callback(new Error("CORS policy: Origin not allowed"));
+    },
     credentials: true,
   }),
 );
+
+console.log("✅ CORS allowed origins:", allowedOrigins);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
