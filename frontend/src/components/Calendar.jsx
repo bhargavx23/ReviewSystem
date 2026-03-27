@@ -48,6 +48,7 @@ const BookingCalendar = ({
     );
     const bookedCount = dayBookings.length;
     const totalSlots = settings?.slotsPerDay || 10;
+    const remaining = Math.max(0, totalSlots - bookedCount);
 
     return (
       <div
@@ -63,7 +64,28 @@ const BookingCalendar = ({
           <span className="font-bold text-sm">{slotNumber}</span>
         </div>
         <div className="text-xs opacity-90 font-mono tracking-wide">
-          {bookedCount}/{totalSlots}
+          {bookedCount}/{remaining}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDayCell = (dayCellInfo) => {
+    const dayStr = dayCellInfo.date.toISOString().split("T")[0];
+    const dayBookings = bookings.filter(
+      (b) => new Date(b.date).toISOString().split("T")[0] === dayStr,
+    );
+    const bookedCount = dayBookings.length;
+    const totalSlots = settings?.slotsPerDay || 10;
+    const remaining = Math.max(0, totalSlots - bookedCount);
+
+    return (
+      <div className="w-full h-full flex flex-col items-start justify-start p-2">
+        <div className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+          {dayCellInfo.dayNumberText}
+        </div>
+        <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-mono">
+          {bookedCount}/{remaining}
         </div>
       </div>
     );
@@ -110,6 +132,7 @@ const BookingCalendar = ({
             display: "block",
           }))}
           eventContent={renderEventContent}
+          dayCellContent={renderDayCell}
           dateClick={handleDateClick}
           eventClick={handleEventClick}
           headerToolbar={{
