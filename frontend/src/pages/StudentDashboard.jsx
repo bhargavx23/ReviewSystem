@@ -44,6 +44,45 @@ const StudentDashboard = () => {
     fetchData();
   }, []);
 
+  // Poll bookings periodically so calendar shows near real-time data
+  useEffect(() => {
+    let mounted = true;
+    const pollInterval = 5000; // 5s
+
+    const pollBookings = async () => {
+      try {
+        const guideRes = await studentAPI.getGuideBookings();
+        const myBatchRes = await studentAPI.getMyBatch();
+        if (!mounted) return;
+        setGuideData(guideRes.data || { bookings: [], settings: {} });
+        setMyBookings(myBatchRes.data?.bookings || []);
+
+        const myBookingsFromApi = myBatchRes.data?.bookings || [];
+        setHasApprovedBooking(
+          myBookingsFromApi.some((b) => b.status === "approved"),
+        );
+        setHasExistingBooking(
+          myBookingsFromApi.some((b) => b.status && b.status !== "rejected"),
+        );
+        setHasRejectedBooking(
+          myBookingsFromApi.some((b) => b.status === "rejected"),
+        );
+      } catch (e) {
+        // silent — keep current UI if poll fails
+        // console.debug("Polling error:", e);
+      }
+    };
+
+    const id = setInterval(pollBookings, pollInterval);
+    // run once immediately after mount
+    pollBookings();
+
+    return () => {
+      mounted = false;
+      clearInterval(id);
+    };
+  }, []);
+
   const fetchData = async () => {
     try {
       setLoading(true);

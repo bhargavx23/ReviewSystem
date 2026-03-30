@@ -65,7 +65,7 @@ const BookingCalendar = ({
           <span className="font-bold text-sm">{slotNumber}</span>
         </div>
         <div className="text-xs opacity-90 font-mono tracking-wide">
-          {bookedCount}/{remaining}
+          {bookedCount} booked
         </div>
       </div>
     );
@@ -85,8 +85,27 @@ const BookingCalendar = ({
         <div className="text-xs font-semibold text-gray-700">
           {dayCellInfo.dayNumberText}
         </div>
+
         <div className="text-[11px] text-gray-500 mt-1 font-mono">
-          {bookedCount}/{remaining}
+          {bookedCount} slots-booked in {totalSlots} slots
+        </div>
+
+        <div className="flex flex-wrap gap-1 mt-2">
+          {dayBookings.slice(0, 5).map((b) => (
+            <span
+              key={b._id || `${b.date}-${b.slotNumber}`}
+              className="text-[10px] px-2 py-0.5 bg-gray-100 rounded-full text-gray-700 border border-gray-200"
+              title={`Slot ${b.slotNumber} — ${b.status || "unknown"}`}
+            >
+              {`S${b.slotNumber}`}
+            </span>
+          ))}
+
+          {dayBookings.length > 5 && (
+            <span className="text-[10px] px-2 py-0.5 bg-gray-50 rounded-full border text-gray-500">
+              +{dayBookings.length - 5} more
+            </span>
+          )}
         </div>
       </div>
     );

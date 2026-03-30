@@ -48,7 +48,7 @@ const GuideDashboard = () => {
       setPendingBookings(pendingRes.data || []);
       setBookings(bookingsRes.data || []);
 
-      const totalBatches = uniqueBatches.length || 0;
+      const totalBatches = batchesRes.data?.length || 0;
       const totalPending = pendingRes.data?.length || 0;
       setStats({
         batches: totalBatches,

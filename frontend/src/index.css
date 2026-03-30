@@ -1,5 +1,4 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
-@import "./styles/colors.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -170,7 +169,10 @@ body {
 
 /* Subtle glow helpers used across interactive elements */
 .shadow-glow-primary {
-  box-shadow: var(--shadow-glow-primary);
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.18);
+}
+.shadow-glow-accent {
+  box-shadow: 0 10px 30px rgba(20, 184, 166, 0.18);
 }
 .shadow-glow-secondary {
   box-shadow: var(--shadow-glow-secondary);

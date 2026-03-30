@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 const User = require("../models/User");
 const Batch = require("../models/Batch");
 const Booking = require("../models/Booking");
 const Settings = require("../models/Settings");
-const { sendBookingEmail } = require("../utils/email");
+const { sendBookingEmail, sendOtpEmail } = require("../utils/email");
 
 // Create user (admin only) - FIXED
 const createUser = async (req, res) => {
@@ -127,7 +128,18 @@ const createBatch = async (req, res) => {
         role: "student",
         isActive: true,
       });
+
+      // Generate OTP for team leader so they can login immediately
+      const otp = crypto.randomInt(100000, 999999).toString();
+      newStudent.otp = otp;
+      newStudent.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
       await newStudent.save();
+      try {
+        await sendOtpEmail(newStudent.email, otp);
+      } catch (e) {
+        console.error("Error sending OTP at batch creation:", e?.message || e);
+      }
       console.log(`✅ Created student user for team leader: ${newStudent.email}`);
     }
 

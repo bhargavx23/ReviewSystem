@@ -41,7 +41,7 @@ const sendOtpEmail = async (email, otp) => {
           <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
             ${otp}
           </div>
-          <p>This OTP expires in 10 minutes.</p>
+          <p>This OTP expires in 5 minutes.</p>
           <hr>
           <p>Review Slot Booking System</p>
         </div>

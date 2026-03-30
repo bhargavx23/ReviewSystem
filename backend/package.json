@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "migrate-sessions": "node scripts/migrate_student_sessions.js",
     "seed": "node seed.js",
     "unseed": "node unseed.js"
   },
